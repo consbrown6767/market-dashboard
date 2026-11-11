@@ -9,6 +9,10 @@
     ["middle_east", "Middle East"], ["china", "China"], ["politics", "US politics"], ["world", "World"], ["crypto", "Crypto"]];
   const HOURS = [[6, "6h"], [24, "24h"], [72, "3d"], [168, "7d"]];
   const RANGES = [[90, "3M"], [365, "1Y"], [1095, "3Y"], [0, "All"]];
+  // Where many ships switch trackers off or fake positions (sanctioned oil, war risk, GPS jamming),
+  // the counts are a floor: shown as "≥". No estimate of the dark ships is added (no data to base one on).
+  const UNDERCOUNTED = new Set(["chokepoint6", "chokepoint4", "chokepoint28"]); // Hormuz, Bab el-Mandeb, Kerch
+  const DARK_NOTE = "At least this many: ships with trackers on. Many here switch them off or fake their position (sanctioned oil, war risk, GPS jamming), so the true number is higher. How much higher can't be told from tracking data.";
   const EVENT_NAMES = { fomc: "Fed decision", cpi: "CPI inflation", jobs: "Jobs report" };
   const TIER_NAMES = { 1: "Wire / official", 2: "Major outlet", 3: "Specialist", 4: "Search result" };
   const state = { topic: "all", hours: 24, q: "", ship: "chokepoint6", range: 365, shipData: null };
@@ -101,8 +105,8 @@
     const shown = d.ports.slice(0, 11);
     $("#nw-ships").innerHTML = `<table><thead><tr><th>Chokepoint</th><th title="Average ships per day, last 7 days of data">Last 7d</th><th title="Average ships per day, Jan–Oct 2023">Normal</th><th>vs normal</th><th title="Same week a year earlier">Year ago</th><th title="Tankers per day, last 7 days vs normal">Tankers</th><th>6 months</th></tr></thead><tbody>${shown.map((p) => {
       const v = pctOf(p.avg7, p.normal), dropped = isNum(v) && v < 60;
-      return `<tr class="clickable ${p.portid === state.ship ? "selected" : ""}" data-ship="${esc(p.portid)}"><td>${esc(p.portname.replace(/ Strait$/, ""))}</td>
-        <td><b>${fixed(p.avg7, 0)}</b></td><td class="dim">${fixed(p.normal, 0)}</td>
+      return `<tr class="clickable ${p.portid === state.ship ? "selected" : ""}" data-ship="${esc(p.portid)}"><td>${esc(p.portname.replace(/ Strait$/, ""))}${UNDERCOUNTED.has(p.portid) ? ` <span class="dim" title="${DARK_NOTE}">*</span>` : ""}</td>
+        <td${UNDERCOUNTED.has(p.portid) ? ` title="${DARK_NOTE}"` : ""}><b>${UNDERCOUNTED.has(p.portid) ? "≥" : ""}${fixed(p.avg7, 0)}</b></td><td class="dim">${fixed(p.normal, 0)}</td>
         <td class="${dropped ? "neg" : isNum(v) && v > 115 ? "pos" : ""}">${isNum(v) ? `${v.toFixed(0)}%` : "–"}</td><td class="dim">${fixed(p.year_ago, 0)}</td>
         <td>${fixed(p.tankers7, 0)} <span class="dim">/ ${fixed(p.tankers_normal, 0)}</span></td>
         <td style="width:90px">${sparkline(p.spark)}</td></tr>`; }).join("")}</tbody></table>`;
@@ -123,8 +127,9 @@
     const from = state.range ? new Date(Date.parse(rows[rows.length - 1].date) - state.range * 86400000).toISOString().slice(0, 10) : "";
     const r = rows.filter((x) => x.date >= from);
     const avg7 = r.map((x, i) => { const w = r.slice(Math.max(0, i - 6), i + 1); return { time: x.date, value: w.reduce((a, b) => a + b.n_total, 0) / w.length }; });
+    const floor = UNDERCOUNTED.has(state.ship) ? `<span class="dim">Counts are a minimum: ships with trackers off aren't seen</span>` : "";
     $("#nw-ship-legend").innerHTML = `<span><i style="background:var(--text-muted)"></i>Each day</span><span><i style="background:var(--series-1)"></i>7-day average</span>
-      <span><i style="background:var(--series-2)"></i>Tankers (7-day average)</span>${port && isNum(port.normal) ? `<span class="dim">Normal (2023): ${port.normal.toFixed(0)} a day</span>` : ""}`;
+      <span><i style="background:var(--series-2)"></i>Tankers (7-day average)</span>${port && isNum(port.normal) ? `<span class="dim">Normal (2023): ${port.normal.toFixed(0)} a day</span>` : ""}${floor}`;
     const c = (state.chart = makeChart($("#nw-ship-chart")));
     c.addHistogramSeries({ color: css("--text-muted"), priceLineVisible: false, lastValueVisible: false }).setData(r.map((x) => ({ time: x.date, value: x.n_total })));
     c.addLineSeries({ color: css("--series-1"), lineWidth: 2, priceLineVisible: false }).setData(avg7);
