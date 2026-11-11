@@ -20,6 +20,14 @@
   const topicName = (t) => (TOPICS.find(([k]) => k === t) || [t, t])[1];
   const link = (url, text) => `<a class="nw-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${text}</a>`;
   const tierDot = (t) => `<span class="nw-tier t${esc(t)}" title="${esc(TIER_NAMES[t] || "")}"></span>`;
+  // Outlet rating (0-100, shared/source_ratings.json) and story trust (news_collector.py). Sourcing, not truth.
+  const RATE_NOTE = "Outlet rating 0-100 from Media Bias/Fact Check and Ad Fontes. Measures how well the outlet usually sources its reporting, not whether this headline is true.";
+  const rateTag = (i) => i.outlet === "official"
+    ? `<span class="nw-rate official" title="Government or central bank: a reliable record of what was said, still one side's claim">OFFICIAL</span>`
+    : `<span class="nw-rate ${i.outlet ? "" : "unrated"}" title="${esc(i.outlet ? `${i.outlet}: ${RATE_NOTE}` : `Not rated by either site: ${RATE_NOTE}`)}">${isNum(i.rating) ? Math.round(i.rating) : "–"}</span>`;
+  const trustTag = (s) => s.trust_label
+    ? `<span class="nw-trust ${esc(String(s.trust_label).toLowerCase())}" title="${esc(`Trust ${isNum(s.trust) ? Math.round(s.trust) : ""}${s.trust_why ? ` (${s.trust_why})` : ""}. How well sourced this story is, not whether it's true.`)}">${esc(s.trust_label)}${isNum(s.trust) ? ` ${Math.round(s.trust)}` : ""}</span>`
+    : "";
   const tags = (topics) => (topics || "").split(",").filter((t) => t && t !== state.topic)
     .slice(0, 3).map((t) => `<span class="grp-tag">${esc(topicName(t))}</span>`).join("");
   const pctOf = (a, b) => (isNum(a) && isNum(b) && b > 0 ? (a / b) * 100 : null);
@@ -56,9 +64,9 @@
   function drawStories(d) {
     $("#nw-top-n").textContent = d.stories.length;
     $("#nw-top").innerHTML = d.stories.length ? d.stories.map((s) => `<div class="nw-story ${s.alert ? "alert" : ""}">
-        <div class="nw-head">${tierDot(s.best_tier)}<span class="nw-title">${esc(s.title)}</span></div>
+        <div class="nw-head">${trustTag(s)}<span class="nw-title">${esc(s.title)}</span></div>
         <div class="item-sub">${s.alert ? `<span class="nw-flag">ALERT</span> ` : ""}${s.n_sources} outlet${s.n_sources === 1 ? "" : "s"} · ${ago(s.first_published)} ${tags(s.topics)}</div>
-        <div class="nw-more">${s.items.map((i) => `<div class="nw-row">${tierDot(i.tier)}<span class="dim">${esc(i.source)}</span> ${link(i.link, esc(i.title))} <span class="dim">${ago(i.published_at)}</span></div>`).join("")}</div>
+        <div class="nw-more">${s.items.map((i) => `<div class="nw-row">${rateTag(i)}<span class="dim">${esc(i.source)}</span> ${link(i.link, esc(i.title))} <span class="dim">${ago(i.published_at)}</span></div>`).join("")}</div>
       </div>`).join("")
       : `<div class="empty">No stories in this window${state.topic !== "all" ? ` for ${esc(topicName(state.topic))}` : ""} yet.</div>`;
   }
@@ -67,7 +75,7 @@
     $("#nw-latest-title").textContent = state.q ? `Headlines matching “${state.q}”` : "Latest headlines";
     $("#nw-latest-n").textContent = d.latest.length;
     $("#nw-latest").innerHTML = d.latest.length ? d.latest.map((i) => `<div class="nw-item">
-        <div class="nw-head">${tierDot(i.tier)}${link(i.link, esc(i.title))}</div>
+        <div class="nw-head">${rateTag(i)}${link(i.link, esc(i.title))}</div>
         <div class="item-sub">${i.alert ? `<span class="nw-flag">ALERT</span> ` : ""}${esc(i.source)} · ${etTime(i.published_at)} ${tags(i.topics)}</div>
         ${i.summary ? `<div class="nw-summary">${esc(i.summary)}</div>` : ""}</div>`).join("")
       : `<div class="empty">${state.q ? "No stored headline matches. Search looks at every headline collected, by whole words (the last word can be a start, like “tarif”)." : "No headlines yet."}</div>`;

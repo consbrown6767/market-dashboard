@@ -310,6 +310,14 @@ tr.clickable { cursor: pointer; }
 .nw-tier.t1 { background: var(--info); }
 .nw-tier.t2 { background: var(--text-secondary); }
 .nw-tier.t3 { background: var(--text-dim); }
+.nw-rate { flex: 0 0 auto; min-width: 22px; padding: 0 3px; font-size: 10px; text-align: center; color: var(--text-secondary); border: 1px solid var(--border); border-radius: 2px; }
+.nw-rate.unrated { color: var(--text-dim); border-style: dashed; }
+.nw-rate.official { color: var(--info); border-color: var(--info); }
+.nw-trust { flex: 0 0 auto; padding: 0 4px; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; border: 1px solid; border-radius: 2px; }
+.nw-trust.high { color: var(--normal); border-color: var(--normal); }
+.nw-trust.medium { color: var(--elevated); border-color: var(--elevated); }
+.nw-trust.low { color: var(--critical); border-color: var(--critical); }
+.nw-trust.official { color: var(--info); border-color: var(--info); }
 .nw-flag { color: var(--critical); font-weight: 700; letter-spacing: 1px; font-size: 9px; }
 .nw-more { display: none; margin: 6px 0 2px 12px; border-left: 1px solid var(--border); padding-left: 8px; }
 .nw-story.open .nw-more { display: block; }

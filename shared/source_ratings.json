@@ -1,0 +1,363 @@
+{
+  "_about": "How much each news outlet's reporting can be trusted, 0-100, from two outside raters (checked 2026-11-10). MBFC (mediabiasfactcheck.com) factual score 0 best to 10 worst -> 100 - 10 x score (label only: its middle value). Ad Fontes (adfontesmedia.com) reliability 0-64 -> 100 x (R - 8) / 40, capped 0-100 (48, the bottom of its 'original fact reporting' band, = 100). Rating = average of the two where both rate an outlet, else the one that does, capped at 99. Outlets neither rates get 'unrated'. Government and central-bank sources aren't media and get no rating: their headlines are labelled 'official' (a reliable record of what was said, still one side's claim). Only accuracy/reliability is used, never the bias scores. To change a rating, update its inputs and re-apply.",
+  "unrated": 40,
+  "outlets": {
+    "CSIS": {
+      "rating": 99,
+      "mbfc_factual": "Very High",
+      "mbfc_score": null,
+      "adfontes_reliability": null
+    },
+    "Reuters": {
+      "rating": 96,
+      "mbfc_factual": "Very High",
+      "mbfc_score": 0.0,
+      "adfontes_reliability": 44.95
+    },
+    "AP": {
+      "rating": 91,
+      "mbfc_factual": "High",
+      "mbfc_score": 0.8,
+      "adfontes_reliability": 44.28
+    },
+    "NBC News": {
+      "rating": 90,
+      "mbfc_factual": "High",
+      "mbfc_score": 1.0,
+      "adfontes_reliability": null
+    },
+    "France 24": {
+      "rating": 90,
+      "mbfc_factual": "High",
+      "mbfc_score": 1.0,
+      "adfontes_reliability": null
+    },
+    "DW": {
+      "rating": 90,
+      "mbfc_factual": "High",
+      "mbfc_score": null,
+      "adfontes_reliability": null
+    },
+    "Seeking Alpha": {
+      "rating": 90,
+      "mbfc_factual": "High",
+      "mbfc_score": null,
+      "adfontes_reliability": null
+    },
+    "Barron's": {
+      "rating": 90,
+      "mbfc_factual": "High",
+      "mbfc_score": null,
+      "adfontes_reliability": null
+    },
+    "TechCrunch": {
+      "rating": 90,
+      "mbfc_factual": "High",
+      "mbfc_score": null,
+      "adfontes_reliability": null
+    },
+    "Foreign Policy": {
+      "rating": 90,
+      "mbfc_factual": "High",
+      "mbfc_score": null,
+      "adfontes_reliability": null
+    },
+    "War on the Rocks": {
+      "rating": 90,
+      "mbfc_factual": "High",
+      "mbfc_score": null,
+      "adfontes_reliability": null
+    },
+    "24/7 Wall St": {
+      "rating": 90,
+      "mbfc_factual": "High",
+      "mbfc_score": null,
+      "adfontes_reliability": null
+    },
+    "Financial Times": {
+      "rating": 89,
+      "mbfc_factual": "High",
+      "mbfc_score": 1.0,
+      "adfontes_reliability": 43.23
+    },
+    "CNBC": {
+      "rating": 89,
+      "mbfc_factual": "High",
+      "mbfc_score": 1.1,
+      "adfontes_reliability": null
+    },
+    "NPR": {
+      "rating": 89,
+      "mbfc_factual": "High",
+      "mbfc_score": 0.9,
+      "adfontes_reliability": 42.67
+    },
+    "Axios": {
+      "rating": 88,
+      "mbfc_factual": "High",
+      "mbfc_score": 0.9,
+      "adfontes_reliability": 42.38
+    },
+    "PBS NewsHour": {
+      "rating": 88,
+      "mbfc_factual": "High",
+      "mbfc_score": 1.0,
+      "adfontes_reliability": 42.0
+    },
+    "ABC News": {
+      "rating": 88,
+      "mbfc_factual": "High",
+      "mbfc_score": 1.1,
+      "adfontes_reliability": 42.76
+    },
+    "The Economist": {
+      "rating": 87,
+      "mbfc_factual": "High",
+      "mbfc_score": null,
+      "adfontes_reliability": 41.36
+    },
+    "MarketWatch": {
+      "rating": 86,
+      "mbfc_factual": "High",
+      "mbfc_score": 1.0,
+      "adfontes_reliability": 40.93
+    },
+    "BBC": {
+      "rating": 85,
+      "mbfc_factual": "Mostly Factual",
+      "mbfc_score": 2.1,
+      "adfontes_reliability": 44.54
+    },
+    "Politico": {
+      "rating": 85,
+      "mbfc_factual": "High",
+      "mbfc_score": 1.3,
+      "adfontes_reliability": 41.42
+    },
+    "Kyiv Independent": {
+      "rating": 85,
+      "mbfc_factual": "High",
+      "mbfc_score": 1.5,
+      "adfontes_reliability": null
+    },
+    "New York Times": {
+      "rating": 84,
+      "mbfc_factual": "High",
+      "mbfc_score": 1.4,
+      "adfontes_reliability": 40.85
+    },
+    "Times of Israel": {
+      "rating": 82,
+      "mbfc_factual": "High",
+      "mbfc_score": 1.8,
+      "adfontes_reliability": null
+    },
+    "Wall Street Journal": {
+      "rating": 81,
+      "mbfc_factual": "Mostly Factual",
+      "mbfc_score": 2.4,
+      "adfontes_reliability": 42.41
+    },
+    "Guardian": {
+      "rating": 80,
+      "mbfc_factual": "High",
+      "mbfc_score": 1.8,
+      "adfontes_reliability": 39.54
+    },
+    "CNN": {
+      "rating": 79,
+      "mbfc_factual": "Mostly Factual",
+      "mbfc_score": 2.7,
+      "adfontes_reliability": 41.9
+    },
+    "Euronews": {
+      "rating": 79,
+      "mbfc_factual": "Mostly Factual",
+      "mbfc_score": 2.1,
+      "adfontes_reliability": null
+    },
+    "Bloomberg": {
+      "rating": 78,
+      "mbfc_factual": "Mostly Factual",
+      "mbfc_score": 2.2,
+      "adfontes_reliability": null
+    },
+    "Washington Post": {
+      "rating": 78,
+      "mbfc_factual": "Mostly Factual",
+      "mbfc_score": 2.1,
+      "adfontes_reliability": 38.62
+    },
+    "The Hill": {
+      "rating": 78,
+      "mbfc_factual": "Mostly Factual",
+      "mbfc_score": 2.2,
+      "adfontes_reliability": null
+    },
+    "Jerusalem Post": {
+      "rating": 75,
+      "mbfc_factual": "Mostly Factual",
+      "mbfc_score": null,
+      "adfontes_reliability": null
+    },
+    "ISW": {
+      "rating": 75,
+      "mbfc_factual": "Mostly Factual",
+      "mbfc_score": null,
+      "adfontes_reliability": null
+    },
+    "MarketScreener": {
+      "rating": 75,
+      "mbfc_factual": "Mostly Factual",
+      "mbfc_score": null,
+      "adfontes_reliability": null
+    },
+    "Al Jazeera": {
+      "rating": 68,
+      "mbfc_factual": "Mixed",
+      "mbfc_score": 4.7,
+      "adfontes_reliability": 41.31
+    },
+    "CBS News": {
+      "rating": 62,
+      "mbfc_factual": "Mostly Factual",
+      "mbfc_score": 3.8,
+      "adfontes_reliability": null
+    },
+    "Kyiv Post": {
+      "rating": 50,
+      "mbfc_factual": "Mixed",
+      "mbfc_score": null,
+      "adfontes_reliability": null
+    },
+    "Ukrinform": {
+      "rating": 50,
+      "mbfc_factual": "Mixed",
+      "mbfc_score": 5.0,
+      "adfontes_reliability": null
+    },
+    "South China Morning Post": {
+      "rating": 50,
+      "mbfc_factual": "Mixed",
+      "mbfc_score": null,
+      "adfontes_reliability": null
+    },
+    "Anadolu Agency": {
+      "rating": 50,
+      "mbfc_factual": "Mixed",
+      "mbfc_score": null,
+      "adfontes_reliability": null
+    },
+    "Investing.com": {
+      "rating": 50,
+      "mbfc_factual": "Mixed",
+      "mbfc_score": null,
+      "adfontes_reliability": null
+    },
+    "Fox News": {
+      "rating": 47,
+      "mbfc_factual": "Low",
+      "mbfc_score": 7.1,
+      "adfontes_reliability": 33.83
+    }
+  },
+  "aliases": {
+    "24/7 wall st": "24/7 Wall St",
+    "24/7 wall st.": "24/7 Wall St",
+    "abc news": "ABC News",
+    "al jazeera": "Al Jazeera",
+    "al jazeera english": "Al Jazeera",
+    "anadolu": "Anadolu Agency",
+    "anadolu agency": "Anadolu Agency",
+    "anadolu ajansı": "Anadolu Agency",
+    "ap": "AP",
+    "ap news": "AP",
+    "associated press": "AP",
+    "axios": "Axios",
+    "barron's": "Barron's",
+    "barrons": "Barron's",
+    "bbc": "BBC",
+    "bbc business": "BBC",
+    "bbc middle east": "BBC",
+    "bbc news": "BBC",
+    "bbc world": "BBC",
+    "bloomberg": "Bloomberg",
+    "bloomberg.com": "Bloomberg",
+    "cbs news": "CBS News",
+    "center for strategic and international studies": "CSIS",
+    "cnbc": "CNBC",
+    "cnn": "CNN",
+    "cnn world": "CNN",
+    "csis": "CSIS",
+    "deutsche welle": "DW",
+    "dw": "DW",
+    "dw news": "DW",
+    "economist": "The Economist",
+    "euronews": "Euronews",
+    "financial times": "Financial Times",
+    "foreign policy": "Foreign Policy",
+    "fox business": "Fox News",
+    "fox news": "Fox News",
+    "france 24": "France 24",
+    "france24": "France 24",
+    "ft.com": "Financial Times",
+    "guardian": "Guardian",
+    "institute for the study of war": "ISW",
+    "investing.com": "Investing.com",
+    "isw": "ISW",
+    "jerusalem post": "Jerusalem Post",
+    "kyiv independent": "Kyiv Independent",
+    "kyiv post": "Kyiv Post",
+    "marketscreener": "MarketScreener",
+    "marketscreener.com": "MarketScreener",
+    "marketwatch": "MarketWatch",
+    "nbc news": "NBC News",
+    "new york times": "New York Times",
+    "npr": "NPR",
+    "nytimes.com": "New York Times",
+    "pbs": "PBS NewsHour",
+    "pbs newshour": "PBS NewsHour",
+    "politico": "Politico",
+    "reuters": "Reuters",
+    "scmp": "South China Morning Post",
+    "seeking alpha": "Seeking Alpha",
+    "south china morning post": "South China Morning Post",
+    "techcrunch": "TechCrunch",
+    "the economist": "The Economist",
+    "the guardian": "Guardian",
+    "the hill": "The Hill",
+    "the jerusalem post": "Jerusalem Post",
+    "the kyiv independent": "Kyiv Independent",
+    "the new york times": "New York Times",
+    "the times of israel": "Times of Israel",
+    "the wall street journal": "Wall Street Journal",
+    "the washington post": "Washington Post",
+    "times of israel": "Times of Israel",
+    "ukrinform": "Ukrinform",
+    "wall street journal": "Wall Street Journal",
+    "war on the rocks": "War on the Rocks",
+    "washington post": "Washington Post",
+    "wsj": "Wall Street Journal"
+  },
+  "official": [
+    "federal reserve",
+    "federalreserve.gov",
+    "ecb",
+    "european central bank",
+    "bea",
+    "sec",
+    "treasury",
+    "white house",
+    "the white house (.gov)",
+    "whitehouse.gov",
+    "state dept",
+    "u.s. department of state (.gov)",
+    "pentagon",
+    "u.s. department of defense (.gov)",
+    "u.s. department of war",
+    "u.s. department of the treasury (.gov)",
+    "un news",
+    "iaea",
+    "(.gov)"
+  ]
+}

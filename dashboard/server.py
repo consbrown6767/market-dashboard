@@ -760,20 +760,20 @@ def api_news(q):
         if not table_exists(conn, "news_stories"):
             return {"ready": False}
         stories = rows(conn, f"""SELECT id, title, link, best_tier, first_published, last_seen, n_items, n_sources, sources,
-                                        topics, alert, importance FROM news_stories
+                                        topics, alert, importance, best_rating, trust, trust_label, trust_why FROM news_stories
                                  WHERE first_published >= ?{tclause} ORDER BY importance DESC, last_seen DESC LIMIT 40""",
                        since, *targs)
         for s in stories:
             s["sources"] = json.loads(s["sources"] or "[]")
-            s["items"] = rows(conn, "SELECT title, source, tier, link, published_at FROM news_items WHERE story_id = ? "
-                                    "ORDER BY tier, published_at LIMIT 25", s["id"])
+            s["items"] = rows(conn, "SELECT title, source, tier, outlet, rating, link, published_at FROM news_items WHERE story_id = ? "
+                                    "ORDER BY (outlet = 'official'), rating DESC, published_at LIMIT 25", s["id"])
         if search:
-            latest = rows(conn, f"""SELECT i.id, i.title, i.source, i.tier, i.link, i.published_at, i.summary, i.topics, i.alert
+            latest = rows(conn, f"""SELECT i.id, i.title, i.source, i.tier, i.outlet, i.rating, i.link, i.published_at, i.summary, i.topics, i.alert
                                     FROM news_fts f JOIN news_items i ON i.id = f.rowid
                                     WHERE news_fts MATCH ?{tclause.replace('topics', 'i.topics')}
                                     ORDER BY i.published_at DESC LIMIT 150""", _fts_query(search), *targs)
         else:
-            latest = rows(conn, f"""SELECT id, title, source, tier, link, published_at, summary, topics, alert FROM news_items
+            latest = rows(conn, f"""SELECT id, title, source, tier, outlet, rating, link, published_at, summary, topics, alert FROM news_items
                                     WHERE published_at >= ?{tclause} ORDER BY published_at DESC LIMIT 150""", since, *targs)
         counts = {t: conn.execute("SELECT count(*) FROM news_stories WHERE first_published >= ? AND topics LIKE ?",
                                   (since, f"%,{t},%")).fetchone()[0] for t in NEWS_TOPICS}

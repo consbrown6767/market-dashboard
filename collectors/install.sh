@@ -1,6 +1,6 @@
 #!/bin/zsh
 # Installs (or reinstalls) the collectors and the dashboard server as background jobs on this Mac.
-# Re-run after editing a collector, shared/watchlist.json, shared/strategy.json, shared/release_dates.json, shared/news_feeds.json
+# Re-run after editing a collector, shared/watchlist.json, shared/strategy.json, shared/release_dates.json, shared/news_feeds.json, shared/source_ratings.json
 # or anything in politics/:
 # launchd runs collector copies in ~/MarketData/app, and the political game machine runs from
 # ~/MarketData/politics, next to its data (which this never touches). (The dashboard server and shared/pairs.json are used in place, so edits to
@@ -47,7 +47,7 @@ cp $HERE/options_collector.py $HERE/positioning_collector.py $HERE/backfill_alpa
    $HERE/spreads_collector.py $HERE/events_collector.py $HERE/watchdog.py $HERE/briefing.py \
    $HERE/scoring.py $HERE/strategy_collector.py $HERE/politics_job.py $HERE/ledger.py $HERE/spx_move.py \
    $HERE/news_collector.py $HERE/shipping_collector.py $DATA/app/
-cp $HERE/../shared/watchlist.json $HERE/../shared/strategy.json $HERE/../shared/release_dates.json $HERE/../shared/news_feeds.json $DATA/app/
+cp $HERE/../shared/watchlist.json $HERE/../shared/strategy.json $HERE/../shared/release_dates.json $HERE/../shared/news_feeds.json $HERE/../shared/source_ratings.json $DATA/app/
 mkdir -p $DATA/politics/data $DATA/politics/outputs $DATA/politics/kalshi
 cp $PROJECT/politics/*.py $PROJECT/politics/*.json $PROJECT/politics/*.csv $PROJECT/politics/game_engine.js $DATA/politics/
 

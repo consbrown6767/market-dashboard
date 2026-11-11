@@ -1,6 +1,6 @@
 # Market Dashboard: the complete reference
 
-*Last updated 2026-11-10 (late evening: code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
+*Last updated 2026-11-10 (late evening: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
 the three prediction models, the political game machine, how it all runs, and the rules agreed along
 the way. Numbers are as of the evening of Monday 2026-11-09 unless a date says otherwise.*
 
@@ -141,7 +141,7 @@ panels stack. Charts are TradingView Lightweight Charts 4.2.0, stored locally.
 | **Gamma** | The breakout tracker: each stock's call wall, put wall and gamma flip, a 5-minute chart with those levels, breakouts in their 30-minute hold, every breakout logged with its grades, and a scorecard. Live and replay kept apart |
 | **Politics** | The political game machine in seven sections: Overview, Play the game, President, Senate and House, Strategy, Ratings, Scorecard |
 | **Scorecard** | Every model's record against its simple guess, with a verdict and a tamper check. The S&P model's range for the next trading day, its inputs, the next scheduled Fed/CPI/jobs news, and its last 120 ranges against what happened. Whether 90% ranges really catch 90% |
-| **News** | Top stories (headlines grouped by event, ranked by how many outlets carry them, wires and official sources counting most), latest headlines with topic filters (Fed and rates, economy, markets, business, tech and AI, energy, shipping, Russia and Ukraine, Middle East, China, US politics, world, crypto) and a search over every stored headline. Shipping chokepoints (last 7 days vs normal and a year ago, tankers, 6-month sparkline, full history chart). Hormuz, Bab el-Mandeb and the Kerch Strait are shown as "≥" (at least): many ships there turn trackers off, so the true number is higher. No estimate is added, because no free data can measure the dark ships. Fed and data calendar with Polymarket's odds for the next decision and the latest Fed statements. Feed health |
+| **News** | Top stories (headlines grouped by event, ranked by how many outlets carry them, weighted by each outlet's rating) with a trust badge (High/Medium/Low/Official: how well sourced, not whether true), each headline showing its outlet's 0-100 rating (from Media Bias/Fact Check and Ad Fontes; `shared/source_ratings.json`), latest headlines with topic filters (Fed and rates, economy, markets, business, tech and AI, energy, shipping, Russia and Ukraine, Middle East, China, US politics, world, crypto) and a search over every stored headline. Shipping chokepoints (last 7 days vs normal and a year ago, tankers, 6-month sparkline, full history chart). Hormuz, Bab el-Mandeb and the Kerch Strait are shown as "≥" (at least): many ships there turn trackers off, so the true number is higher. No estimate is added, because no free data can measure the dark ships. Fed and data calendar with Polymarket's odds for the next decision and the latest Fed statements. Feed health |
 | **Events** | Polymarket by group (macro and Fed, geopolitics, business and tech, politics, crypto, sports and other), 24-hour movers, what resolves this week, every event with its price history |
 | **Status** | Every job's last run, status and detail |
 
@@ -193,7 +193,7 @@ from 2026-10-26. It can never be recovered for earlier dates.
 | `poly_events` / `poly_markets` | 6,125 / 71,092 | since 2026-10-26 | Polymarket events and their markets |
 | `poly_snapshots` | 1,810,572 | hourly since 2026-10-26 | One price per market per hour, with bid/ask and Polymarket's own changes |
 | `runs` | 747 | since 2026-10-26 | Every job run |
-| `news_items` / `news_stories` | ~3,000 / ~2,650 (first run, 2026-11-10) | from 2026-11-07 | One row per distinct headline; headlines grouped into stories with importance and topics. `news_fts` is their full-text search index (not backed up; rebuilt automatically) |
+| `news_items` / `news_stories` | ~3,300 / ~2,900 (2026-11-10) | from 2026-11-07 | One row per distinct headline (with its outlet's rating); headlines grouped into stories with importance, topics and a trust score (since 2026-11-10: about 35% High, 16% Medium, 46% Low, 3% Official). `news_fts` is their full-text search index (not backed up; rebuilt automatically) |
 | `news_feed_status` | 83 | — | Each source's last read and last error |
 
 **History (free to re-download):**

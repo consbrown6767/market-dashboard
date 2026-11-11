@@ -424,9 +424,21 @@ Feed list partly taken from the open-source World Monitor project's catalog (`~/
   No article text (size and copyright). Items older than 72 hours when first seen are skipped;
   undated items on a feed's first read are skipped as old backlog.
 - **Stories**: a headline joins a story when its words overlap at least 50% (Jaccard) with a
-  headline from the last 36 hours. Importance = sum over distinct outlets of their tier weight
-  (wire/official 3, major outlet 2, specialist 1.5, search result 1) + 3 if any headline has an
-  alert word. A story's topics are the ones at least a third of its headlines carry.
+  headline from the last 36 hours. Importance = sum over distinct outlets of 1 + 2 x rating/100
+  (government sources 3) + 3 if any headline has an alert word. A story's topics are the ones at
+  least a third of its headlines carry. (The old `tier` columns are still filled but no longer used.)
+- **Outlet ratings and story trust** (since 2026-11-10, owner's request): `shared/source_ratings.json`
+  rates ~45 outlets 0-100 from Media Bias/Fact Check's factual score (100 - 10 x score) and Ad Fontes'
+  reliability (100 x (R - 8) / 40), averaged where both rate an outlet; outlets neither rates are
+  `unrated` (40); government and central-bank sources are `official` (no rating: a reliable record of
+  what was said, still one side's claim). Only accuracy is used, never the bias scores. Each headline
+  stores `outlet` and `rating`; each story stores `trust` = best outlet's rating + 5 per other outlet
+  rated 60+ (or official) carrying it (max +15) - 15 if the lead headline hedges ("reportedly",
+  "sources say", "could", "alleged", a question mark ...) - 10 if any headline denies or disputes,
+  capped 0-100, with `trust_label` High (80+) / Medium (60-79) / Low / Official and `trust_why`.
+  It measures sourcing, not truth. After editing the ratings file: `install.sh`, then
+  `~/MarketData/.venv/bin/python ~/MarketData/app/news_collector.py rescore`. On 2026-11-10 about 41% of
+  headlines came from unrated outlets (Yahoo Finance, The National, Iran International, Lloyd's List ...).
 - **Search**: `news_fts` (SQLite full-text, word stems). Left out of the backup and rebuilt from
   `news_items` automatically when its count doesn't match.
 - A run is `ok` while at least 60% of feeds answer (dead feeds show red in the Sources panel and

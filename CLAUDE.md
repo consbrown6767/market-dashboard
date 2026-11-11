@@ -49,7 +49,8 @@ Fed calendar), Events (Polymarket), Status.
   it reads schedules from the launchd plists, but a job must record itself in `runs` to be watched.
 
 - News tab (since 2026-11-10): `collectors/news_collector.py` (job `news`, every 15 min; sources, topics
-  and alert words in `shared/news_feeds.json`), `collectors/shipping_collector.py` (job `shipping`, IMF
+  and alert words in `shared/news_feeds.json`; outlet ratings 0-100 and story trust from `shared/source_ratings.json`,
+  sourced from MBFC and Ad Fontes: change a rating's inputs there, then `install.sh` and `news_collector.py rescore`), `collectors/shipping_collector.py` (job `shipping`, IMF
   PortWatch), page `dashboard/static/news.js`. Not built yet: linking stories to market moves.
 
 ## Answering the owner's questions about current events
