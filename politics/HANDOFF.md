@@ -102,7 +102,7 @@ The hourly job now runs on this Mac (the M1 Pro), inside the politics job. The M
 run this on the M4: `launchctl bootout gui/$UID/com.politicalgamemachine.kalshi`
 
 ### 4. Decisions
-- **Git:** the project still isn't a git repository. The hash chain covers tamper checks without it.
+- **Git:** the code is a git repo in `~/Code/market-dashboard` since 2026-11-10. The forecast logs (in `~/MarketData/politics`) aren't in it; their hash chain covers tamper checks.
 - **Blend weight:** it stays at 25% raw until the scorecard supports changing it.
 
 ## Limits to keep in mind

@@ -84,7 +84,7 @@ backups/      nightly compressed copy of the database
   "Optimize Mac Storage".
 - **Backup:** a nightly compressed copy of **everything that can't be re-downloaded for free** (live
   snapshots, open interest, Polymarket history, run log, plus the small free tables in case a free
-  source disappears) goes into this project folder (iCloud). The 2024+ option-price backfill is left out
+  source disappears) goes into `~/Library/Mobile Documents/com~apple~CloudDocs/Vibe Coding/Market Dashboard/backups/` (iCloud, off this Mac; the code itself is in git). The 2024+ option-price backfill is left out
   (~70% of the database): re-run `collectors/backfill_alpaca.py` to rebuild it (~45 min). New tables are
   backed up automatically unless added to `BACKUP_EXCLUDE`.
 - **API keys: `~/.config/market-dashboard/alpaca.env`**, outside the project and iCloud.

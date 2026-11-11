@@ -1,6 +1,6 @@
 # Market Dashboard: the complete reference
 
-*Last updated 2026-11-10 (evening: News tab, news and shipping collectors) by Claude. One place for everything about this project: what it is, the data,
+*Last updated 2026-11-10 (late evening: code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
 the three prediction models, the political game machine, how it all runs, and the rules agreed along
 the way. Numbers are as of the evening of Monday 2026-11-09 unless a date says otherwise.*
 
@@ -75,7 +75,7 @@ Three principles hold everything together:
 
 | What | Where | Notes |
 |---|---|---|
-| Code and docs | This folder (iCloud): `Vibe Coding/Market Dashboard/` | Not a git repository |
+| Code and docs | `~/Code/market-dashboard` | A git repo since 2026-11-10 (moved out of iCloud: git and iCloud syncing clash). The old iCloud folder `Vibe Coding/Market Dashboard/` now only matters for its `backups/` |
 | Database | `~/MarketData/options.db` | Outside iCloud on purpose: syncing a file mid-write can corrupt it |
 | Logs | `~/MarketData/logs/` | One per job |
 | Python | `~/MarketData/.venv` | Uses `truststore` because python.org Python has no CA certificates |
@@ -237,7 +237,7 @@ Small housekeeping tables: `alpaca_contracts` (one day only, then dropped as sta
 - **Size:** 3.7 GB today. It was 2.2 GB on 11-02 and grew faster after 42 symbols were added on 11-05
   (snapshots are about 50% bigger since). Polymarket adds about 20 MB a day; news about 1–3 MB a day
   (to be measured after a week).
-- **Backup** (nightly, into `backups/`, so iCloud keeps a copy): `options-core.db.gz` (6.6 MB: all small
+- **Backup** (nightly, into `~/Library/Mobile Documents/com~apple~CloudDocs/Vibe Coding/Market Dashboard/backups/`, so iCloud keeps a copy): `options-core.db.gz` (6.6 MB: all small
   tables, schemas and views) plus one file per month (`options-2026-10.db.gz` 161 MB, `-11` 197 MB) and
   `politics-data.tar.gz`. Only the open month is rewritten, so closed months never re-upload. The
   option-price backfill (about 70% of the database) is left out because it can be rebuilt in about 45 min.
@@ -741,7 +741,7 @@ more data; short-interest data (no free daily source).
 - **Political machine:** your ratings, the facts to confirm, the M4 job (section 10).
 - **Gamma tracker:** confirm the four sector matches; let the live test run for weeks before judging.
 - **Storage levers** if needed (section 6.4).
-- **Git:** the project still isn't a repository. Hash chains cover the tamper checks without it.
+- **Git:** since 2026-11-10 the code is a git repo in `~/Code/market-dashboard` (data, logs, keys and backups excluded).
 - **One-home proposal** (`politics/ENVIRONMENT.md`, not acted on): keep the M1 Pro always on, add an
   external SSD for data, Tailscale so the M4 and phone can reach it, code in GitHub, iCloud for documents only.
 

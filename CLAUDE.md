@@ -15,7 +15,10 @@ Scorecard (every model's record, plus the S&P move-size model), News (headlines,
 Fed calendar), Events (Polymarket), Status.
 
 ## Where things are
-- Code: this folder (iCloud). Database: `~/MarketData/options.db` (outside iCloud on purpose).
+- Code: this folder, `~/Code/market-dashboard`, a git repo (moved out of iCloud on 2026-11-10; the old
+  iCloud copy at `Vibe Coding/Market Dashboard/` is obsolete except its `backups/` folder, where the nightly
+  database backups still go). Database: `~/MarketData/options.db` (outside iCloud on purpose).
+  Commit finished pieces of work; never commit data, logs, keys or backups (`.gitignore` covers them).
   Logs: `~/MarketData/logs/`. Python env: `~/MarketData/.venv` (uses `truststore`; python.org
   Python has no CA certs).
 - Alpaca keys: `~/.config/market-dashboard/alpaca.env` (free paper account). Never print them or put
