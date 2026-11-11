@@ -75,7 +75,7 @@ Three principles hold everything together:
 
 | What | Where | Notes |
 |---|---|---|
-| Code and docs | `~/Code/market-dashboard` | A git repo since 2026-11-10 (moved out of iCloud: git and iCloud syncing clash). The old iCloud folder `Vibe Coding/Market Dashboard/` now only matters for its `backups/` |
+| Code and docs | `~/Code/market-dashboard` | A git repo since 2026-11-10, on GitHub as the private repo `consbrown6767/market-dashboard` (moved out of iCloud: git and iCloud syncing clash). The old iCloud folder `Vibe Coding/Market Dashboard/` now only matters for its `backups/` |
 | Database | `~/MarketData/options.db` | Outside iCloud on purpose: syncing a file mid-write can corrupt it |
 | Logs | `~/MarketData/logs/` | One per job |
 | Python | `~/MarketData/.venv` | Uses `truststore` because python.org Python has no CA certificates |
