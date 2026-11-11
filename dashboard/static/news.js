@@ -15,7 +15,10 @@
   const DARK_NOTE = "At least this many: ships with trackers on. Many here switch them off or fake their position (sanctioned oil, war risk, GPS jamming), so the true number is higher. How much higher can't be told from tracking data.";
   const EVENT_NAMES = { fomc: "Fed decision", cpi: "CPI inflation", jobs: "Jobs report" };
   const TIER_NAMES = { 1: "Wire / official", 2: "Major outlet", 3: "Specialist", 4: "Search result" };
-  const state = { topic: "all", hours: 24, q: "", ship: "chokepoint6", range: 365, shipData: null };
+  // Minimum reliability: stories by trust score, headlines by their outlet's rating (0 = everything).
+  const RELS = [[0, "All"], [50, "50+"], [70, "70+"], [80, "80+"], [90, "90+"]];
+  const state = { topic: "all", hours: 24, q: "", min: 0, official: true, ship: "chokepoint6", range: 365, shipData: null };
+  try { state.min = Number(localStorage.getItem("nw-min")) || 0; state.official = localStorage.getItem("nw-official") !== "0"; } catch (e) { /* no storage */ }
 
   const topicName = (t) => (TOPICS.find(([k]) => k === t) || [t, t])[1];
   const link = (url, text) => `<a class="nw-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${text}</a>`;
@@ -42,12 +45,17 @@
   // ---------- toolbar
   function drawToolbar(counts) {
     $("#nw-topics").innerHTML = TOPICS.map(([k, label]) => `<button class="chip ${k === state.topic ? "active" : ""}" data-nw-topic="${k}">${label}${k !== "all" && counts ? `<span class="n">${counts[k] ?? 0}</span>` : ""}</button>`).join(" ");
+    $("#nw-rel").innerHTML = RELS.map(([m, label]) => `<button class="chip ${m === state.min ? "active" : ""}" data-nw-min="${m}" title="${m ? `Stories with a trust score of ${m} or more; headlines from outlets rated ${m} or more` : "Everything, rated or not"}">${label}</button>`).join("")
+      + `<button class="chip ${state.official ? "active" : ""}" data-nw-official title="Include government and central-bank sources (no rating: a record of what was said)">+ Official</button>`;
     $("#nw-hours").innerHTML = HOURS.map(([h, label]) => `<button class="chip ${h === state.hours ? "active" : ""}" data-nw-hours="${h}" title="Stories first published in the last ${label}">${label}</button>`).join("");
   }
   document.addEventListener("click", (e) => {
     const t = e.target.closest("[data-nw-topic]"), h = e.target.closest("[data-nw-hours]"), r = e.target.closest("[data-nw-range]");
     if (t) { state.topic = t.dataset.nwTopic; loaders.news(); }
     if (h) { state.hours = Number(h.dataset.nwHours); loaders.news(); }
+    const m = e.target.closest("[data-nw-min]"), o = e.target.closest("[data-nw-official]");
+    if (m) { state.min = Number(m.dataset.nwMin); try { localStorage.setItem("nw-min", state.min); } catch (err) { /* ignore */ } loaders.news(); }
+    if (o) { state.official = !state.official; try { localStorage.setItem("nw-official", state.official ? "1" : "0"); } catch (err) { /* ignore */ } loaders.news(); }
     if (r) { state.range = Number(r.dataset.nwRange); drawShipChart(); }
     const ship = e.target.closest("[data-ship]");
     if (ship) { state.ship = ship.dataset.ship; drawShips(); loadShipChart(); }
@@ -68,7 +76,7 @@
         <div class="item-sub">${s.alert ? `<span class="nw-flag">ALERT</span> ` : ""}${s.n_sources} outlet${s.n_sources === 1 ? "" : "s"} · ${ago(s.first_published)} ${tags(s.topics)}</div>
         <div class="nw-more">${s.items.map((i) => `<div class="nw-row">${rateTag(i)}<span class="dim">${esc(i.source)}</span> ${link(i.link, esc(i.title))} <span class="dim">${ago(i.published_at)}</span></div>`).join("")}</div>
       </div>`).join("")
-      : `<div class="empty">No stories in this window${state.topic !== "all" ? ` for ${esc(topicName(state.topic))}` : ""} yet.</div>`;
+      : `<div class="empty">No stories in this window${state.topic !== "all" ? ` for ${esc(topicName(state.topic))}` : ""}${state.min ? ` at ${state.min}+ reliability` : ""} yet.</div>`;
   }
 
   function drawLatest(d) {
@@ -151,7 +159,7 @@
 
   loaders.news = async () => {
     const [d, s] = await Promise.all([
-      api(`/api/news?topic=${state.topic}&hours=${state.hours}&q=${encodeURIComponent(state.q)}`),
+      api(`/api/news?topic=${state.topic}&hours=${state.hours}&min=${state.min}&official=${state.official ? 1 : 0}&q=${encodeURIComponent(state.q)}`),
       state.shipData ? Promise.resolve(state.shipData) : api("/api/shipping"),
     ]);
     state.shipData = s;

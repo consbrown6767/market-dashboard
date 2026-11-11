@@ -756,32 +756,38 @@ def api_news(q):
     since = (datetime.now(ET) - timedelta(hours=hours)).isoformat(timespec="seconds")
     tclause = "" if topic == "all" else " AND topics LIKE ?"
     targs = () if topic == "all" else (f"%,{topic},%",)
+    # Minimum reliability (0 = everything). Stories filter on trust, headlines on their outlet's rating.
+    # Government sources have no number; they stay in unless official=0.
+    min_rel = min(max(int(q.get("min", ["0"])[0] or 0), 0), 100)
+    keep_official = q.get("official", ["1"])[0] != "0"
+    s_rel = "" if not min_rel else f" AND (trust >= {min_rel}{" OR trust_label = 'Official'" if keep_official else ''})"
+    i_rel = "" if not min_rel else f" AND (rating >= {min_rel}{" OR outlet = 'official'" if keep_official else ''})"
     with db() as conn:
         if not table_exists(conn, "news_stories"):
             return {"ready": False}
         stories = rows(conn, f"""SELECT id, title, link, best_tier, first_published, last_seen, n_items, n_sources, sources,
                                         topics, alert, importance, best_rating, trust, trust_label, trust_why FROM news_stories
-                                 WHERE first_published >= ?{tclause} ORDER BY importance DESC, last_seen DESC LIMIT 40""",
+                                 WHERE first_published >= ?{tclause}{s_rel} ORDER BY importance DESC, last_seen DESC LIMIT 40""",
                        since, *targs)
         for s in stories:
             s["sources"] = json.loads(s["sources"] or "[]")
             s["items"] = rows(conn, "SELECT title, source, tier, outlet, rating, link, published_at FROM news_items WHERE story_id = ? "
-                                    "ORDER BY (outlet = 'official'), rating DESC, published_at LIMIT 25", s["id"])
+                                    f"{i_rel} ORDER BY (outlet = 'official'), rating DESC, published_at LIMIT 25", s["id"])
         if search:
             latest = rows(conn, f"""SELECT i.id, i.title, i.source, i.tier, i.outlet, i.rating, i.link, i.published_at, i.summary, i.topics, i.alert
                                     FROM news_fts f JOIN news_items i ON i.id = f.rowid
-                                    WHERE news_fts MATCH ?{tclause.replace('topics', 'i.topics')}
+                                    WHERE news_fts MATCH ?{tclause.replace('topics', 'i.topics')}{i_rel.replace('rating', 'i.rating').replace('outlet', 'i.outlet')}
                                     ORDER BY i.published_at DESC LIMIT 150""", _fts_query(search), *targs)
         else:
             latest = rows(conn, f"""SELECT id, title, source, tier, outlet, rating, link, published_at, summary, topics, alert FROM news_items
-                                    WHERE published_at >= ?{tclause} ORDER BY published_at DESC LIMIT 150""", since, *targs)
-        counts = {t: conn.execute("SELECT count(*) FROM news_stories WHERE first_published >= ? AND topics LIKE ?",
+                                    WHERE published_at >= ?{tclause}{i_rel} ORDER BY published_at DESC LIMIT 150""", since, *targs)
+        counts = {t: conn.execute(f"SELECT count(*) FROM news_stories WHERE first_published >= ? AND topics LIKE ?{s_rel}",
                                   (since, f"%,{t},%")).fetchone()[0] for t in NEWS_TOPICS}
         total = conn.execute("SELECT count(*) FROM news_items").fetchone()[0]
         newest = conn.execute("SELECT max(first_seen) FROM news_items").fetchone()[0]
         feeds = rows(conn, "SELECT feed, last_try, last_ok, items, error FROM news_feed_status ORDER BY error IS NULL, feed")
         fed = _fed_panel(conn)
-    return {"ready": True, "topic": topic, "hours": hours, "stories": stories, "latest": latest, "counts": counts,
+    return {"ready": True, "topic": topic, "hours": hours, "min": min_rel, "official": keep_official, "stories": stories, "latest": latest, "counts": counts,
             "total_headlines": total, "newest": newest, "feeds": feeds, "fed": fed}
 
 

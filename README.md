@@ -436,7 +436,7 @@ Feed list partly taken from the open-source World Monitor project's catalog (`~/
   rated 60+ (or official) carrying it (max +15) - 15 if the lead headline hedges ("reportedly",
   "sources say", "could", "alleged", a question mark ...) - 10 if any headline denies or disputes,
   capped 0-100, with `trust_label` High (80+) / Medium (60-79) / Low / Official and `trust_why`.
-  It measures sourcing, not truth. After editing the ratings file: `install.sh`, then
+  It measures sourcing, not truth. The News tab can filter by reliability (All, 50+, 70+, 80+, 90+: stories by trust, headlines by outlet rating; "+ Official" keeps government sources in). After editing the ratings file: `install.sh`, then
   `~/MarketData/.venv/bin/python ~/MarketData/app/news_collector.py rescore`. On 2026-11-10 about 41% of
   headlines came from unrated outlets (Yahoo Finance, The National, Iran International, Lloyd's List ...).
 - **Search**: `news_fts` (SQLite full-text, word stems). Left out of the backup and rebuilt from
