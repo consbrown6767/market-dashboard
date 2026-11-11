@@ -1,0 +1,24 @@
+{
+  "note": "A stand-in calendar based on recent cycles. The 2028 order isn't set, and Democrats may change the early states. Delegates are approximated by electoral votes. lane_region is Claude's draft: how much each lane over- or under-performs in each region, on the same scale as strength.",
+  "windows": [
+    {"name": "Early states", "codes": ["IA", "NH", "SC", "NV"], "survivors": 5, "momentum": 0.5},
+    {"name": "Super Tuesday", "codes": ["AL", "AR", "CA", "CO", "ME", "MA", "MN", "NC", "OK", "TN", "TX", "UT", "VT", "VA"], "survivors": 3, "momentum": 0.3},
+    {"name": "March primaries", "codes": ["GA", "HI", "ID", "MI", "MS", "MO", "WA", "ND", "AZ", "FL", "IL", "KS", "LA", "OH", "AK", "WY"], "survivors": 2, "momentum": 0.15},
+    {"name": "April primaries", "codes": ["NY", "WI", "PA", "MD", "CT", "DE", "RI"], "survivors": 2, "momentum": 0.1},
+    {"name": "Final primaries", "codes": ["IN", "NE", "WV", "KY", "OR", "NJ", "NM", "MT", "SD", "DC"], "survivors": 2, "momentum": 0.0}
+  ],
+  "lane_region": {
+    "D": {
+      "progressive": {"west": 0.25, "northeast": 0.2, "south": -0.3},
+      "pragmatic": {"midwest": 0.25, "plains": 0.1, "sunbelt": 0.1},
+      "establishment": {"south": 0.3, "sunbelt": 0.1, "west": -0.1},
+      "fighter": {"west": 0.2, "northeast": 0.1, "south": -0.1}
+    },
+    "R": {
+      "maga": {"south": 0.2, "plains": 0.1, "midwest": 0.1, "northeast": -0.1},
+      "establishment": {"northeast": 0.3, "west": 0.1, "south": -0.1},
+      "right": {"south": 0.1, "sunbelt": 0.2},
+      "outsider": {"west": 0.1, "northeast": 0.1}
+    }
+  }
+}

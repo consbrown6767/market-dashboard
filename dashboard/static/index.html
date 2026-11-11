@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Market Dashboard</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/politics.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-left">
+      <span class="logo">MARKET DASHBOARD</span>
+      <nav class="tabs" id="tabs">
+        <button class="tab active" data-view="options">Options</button>
+        <button class="tab" data-view="spreads">Spreads</button>
+        <button class="tab" data-view="gamma">Gamma</button>
+        <button class="tab" data-view="politics">Politics</button>
+        <button class="tab" data-view="scorecard">Scorecard</button>
+        <button class="tab" data-view="news">News</button>
+        <button class="tab" data-view="events">Events</button>
+        <button class="tab" data-view="status">Status</button>
+      </nav>
+    </div>
+    <div class="header-clock" id="clock"></div>
+    <div class="header-right">
+      <div class="panels-picker">
+        <button class="chip" id="panels-btn" type="button" title="Show or hide this tab's panels" aria-haspopup="true">+</button>
+        <div class="panels-menu" id="panels-menu" hidden></div>
+      </div>
+      <button class="chip" id="reset-layout" title="Put this tab's panels back in their original order and sizes, and show them all">Reset layout</button>
+      <div class="status-indicator" id="status"><span class="status-dot"></span><span id="status-text">Loading</span></div>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- Panels: drag by the header to move, drag the bottom-right corner to resize. Layout is saved per tab
+         in this browser. data-panel ids must stay stable or saved layouts lose that panel's position. -->
+
+    <!-- OPTIONS -->
+    <section class="view active" id="view-options">
+      <div class="grid" data-layout="options">
+        <div class="panel col-all compact" data-panel="od-summary">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title" id="od-title">Options detail</span>
+              <input class="search" id="od-symbol" type="search" placeholder="Any ticker… (Enter)" style="width:150px" autocomplete="off"></div>
+            <span class="badge" id="od-badge">–</span></div>
+          <div class="toolbar" style="margin:0;padding:8px 10px 0"><span class="toolbar-label">Expiration</span><span id="od-exps"></span></div>
+          <div class="stats" id="od-stats" style="border-bottom:0"></div>
+        </div>
+        <div class="panel col-2 medium" data-panel="px">
+          <div class="panel-header">
+            <div class="panel-header-left"><span class="panel-title" id="px-title">Price</span><span class="dim" id="px-last"></span></div>
+            <div class="range" id="px-range"></div>
+          </div>
+          <div class="panel-content flush chart-host"><div class="chart-frame"><div class="chart" id="px-chart"></div></div></div>
+          <div class="panel-foot">Full-market (SIP) candles, split- and dividend-adjusted, ~15 min delayed (free plan). Intraday includes pre/after-hours.</div>
+        </div>
+        <div class="panel col-2 medium" data-panel="contract">
+          <div class="panel-header">
+            <div class="panel-header-left"><span class="panel-title" id="ct-title">Option contract</span></div>
+            <div class="range" id="ct-range"></div>
+          </div>
+          <div class="stats" id="ct-stats"></div>
+          <div class="panel-content flush chart-host"><div class="chart-frame"><div class="chart" id="ct-chart"></div><div class="empty" id="ct-empty" style="padding:16px">Click a bid or ask in the chain below to chart that contract.</div></div></div>
+          <div class="panel-foot">Candles from actual trades (Alpaca indicative feed, ~15 min delayed); gaps mean no trades. History available from Feb 2024.</div>
+        </div>
+        <div class="panel col-all" data-panel="chain" style="--h:520px">
+          <div class="panel-header">
+            <div class="panel-header-left"><span class="panel-title" id="ch-title">Options chain</span><span class="dim" id="ch-note"></span></div>
+            <span class="badge" id="ch-badge">–</span>
+          </div>
+          <div class="toolbar" style="margin:0;padding:8px 10px 4px"><span class="toolbar-label">Expiration</span><span id="ch-exps"></span></div>
+          <div class="panel-content flush" id="ch-table"></div>
+        </div>
+        <div class="panel col-2" data-panel="od-oi" style="--h:340px">
+          <div class="panel-header">
+            <div class="panel-header-left"><span class="panel-title">Open interest by strike</span>
+              <span class="legend"><span><i style="background:var(--normal)"></i>Calls</span><span><i style="background:var(--critical)"></i>Puts</span><span><i style="background:var(--text)"></i>Price</span></span></div>
+            <div class="range" data-strike-controls></div>
+          </div>
+          <div class="panel-content flush chart-host"><div class="chart-frame" id="od-oi"></div></div>
+        </div>
+        <div class="panel col-2" data-panel="od-vol" style="--h:340px">
+          <div class="panel-header">
+            <div class="panel-header-left"><span class="panel-title">Volume today by strike</span><span class="dim" id="od-vol-note"></span></div>
+            <div class="range" data-strike-controls></div>
+          </div>
+          <div class="panel-content flush chart-host"><div class="chart-frame" id="od-vol"></div></div>
+        </div>
+        <div class="panel col-2" data-panel="od-iv" style="--h:340px">
+          <div class="panel-header">
+            <div class="panel-header-left"><span class="panel-title">Implied volatility by strike</span>
+              <span class="legend"><span><i style="background:var(--series-1)"></i>Calls</span><span><i style="background:var(--series-2)"></i>Puts</span></span><span class="dim" id="od-iv-note"></span></div>
+          </div>
+          <div class="panel-content flush chart-host"><div class="chart-frame" id="od-iv"></div></div>
+        </div>
+        <div class="panel col-2" data-panel="od-exp" style="--h:340px">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">By expiration</span><span class="dim">click a row to focus on it</span></div></div>
+          <div class="panel-content flush" id="od-exp-table"></div>
+        </div>
+        <div class="panel col-2 tall" data-panel="collected">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Options data collected</span><span class="panel-count" id="opt-count">–</span></div><span class="badge" id="opt-badge">–</span></div>
+          <div class="panel-content flush" id="opt-table"></div>
+          <div class="panel-foot">Click a symbol for its options detail. Volume: full market, live from Yahoo (* = Alpaca backup, 15 min old). OCC series = every strike × expiration listed (out to ~3 years). In snapshot = contracts priced each hour (expirations ≤60 days, strikes ±25%, call + put).</div>
+        </div>
+        <div class="panel col-2 tall" data-panel="gex">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">S&amp;P 500 dealer gamma</span></div><span class="badge" id="gex-badge">–</span></div>
+          <div class="panel-content flush chart-host"><div class="stats" id="gex-stats"></div><div class="chart-frame"><div class="chart" id="gex-chart"></div></div></div>
+          <div class="panel-foot">SqueezeMetrics GEX, last 12 months. Higher = dealers dampen moves; low or negative = they amplify.</div>
+        </div>
+        <div class="panel col-all medium" data-panel="cftc">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Futures positioning · CFTC</span></div><span class="badge" id="cftc-badge">–</span></div>
+          <div class="panel-content flush" id="cftc-table"></div>
+          <div class="panel-foot">Net position as % of open interest. Positions as of Tuesday, published Friday. Hedge funds = CFTC "leveraged money".</div>
+        </div>
+        <!-- Watchlists: the universal list (every symbol with data, built from the database) and the
+             owner's custom lists (shared/watchlists.json). Click a ticker to open it above. -->
+        <div class="panel col-2 tall" data-panel="universe">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Universal watchlist</span><span class="panel-count" id="uni-count">–</span></div><span class="dim" id="uni-target"></span></div>
+          <div class="panel-content flush" id="uni-table"></div>
+          <div class="panel-foot">Every stock with data in the database; grows on its own as collection grows. Click a ticker to open it. + adds it to the list open in My watchlists. OPT = options data, SPR = spread prices only.</div>
+        </div>
+        <div class="panel col-2 tall" data-panel="mylists">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">My watchlists</span><span class="panel-count" id="ml-count">–</span></div></div>
+          <div class="toolbar" style="margin:0;padding:8px 10px">
+            <select class="search" id="ml-select" style="width:auto;min-width:140px" aria-label="Watchlist"></select>
+            <button class="chip" type="button" id="ml-new">New</button>
+            <button class="chip" type="button" id="ml-rename">Rename</button>
+            <button class="chip" type="button" id="ml-delete">Delete</button>
+            <span class="dim" id="ml-msg"></span>
+          </div>
+          <div class="panel-content flush" id="ml-table"></div>
+          <div class="panel-foot">Saved in shared/watchlists.json. Click a ticker to open it; × removes it from this list.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SPREADS: relative-value pairs (breadth, KO/PEP, CVX/XOM, ...) from shared/pairs.json -->
+    <section class="view" id="view-spreads">
+      <div class="toolbar">
+        <span class="toolbar-label">Pair</span><span id="pair-chips"></span>
+        <form class="pair-form" id="pair-form" autocomplete="off">
+          <span class="toolbar-label">Any pair</span>
+          <input class="search ticker" id="leg-long" placeholder="Long" maxlength="10" spellcheck="false" aria-label="Long ticker">
+          <span class="dim">/</span>
+          <input class="search ticker" id="leg-short" placeholder="Short" maxlength="10" spellcheck="false" aria-label="Short ticker">
+          <button class="chip" type="submit">Show</button>
+          <button class="chip" type="button" id="pair-swap" title="Flip long and short">Swap</button>
+          <button class="chip" type="button" id="pair-save" hidden>Save</button>
+          <span class="dim" id="pair-msg"></span>
+        </form>
+      </div>
+      <div class="grid" data-layout="spreads">
+        <div class="panel col-all compact" data-panel="pair-stats" data-title="Pair summary">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title" id="pair-title">–</span></div><span class="badge" id="pair-badge">–</span></div>
+          <div class="stats" id="pair-stats" style="border-bottom:0"></div>
+        </div>
+        <div class="panel col-3 tall" data-panel="ratio">
+          <div class="panel-header">
+            <div class="panel-header-left"><span class="panel-title" id="ratio-title">Ratio</span>
+              <span class="legend"><span><i style="background:var(--text)"></i>Ratio</span><span><i style="background:var(--series-1)"></i>50-day</span><span><i style="background:var(--series-2)"></i>200-day</span></span></div>
+            <div class="range" id="range"></div>
+          </div>
+          <div class="panel-content flush chart-host"><div class="chart-frame"><div class="chart" id="ratio-chart"></div></div></div>
+        </div>
+        <div class="panel tall" data-panel="returns">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Returns</span></div></div>
+          <div class="panel-content flush" id="pair-returns" style="flex:0 0 auto"></div>
+          <div class="panel-foot">Spread = change in the ratio. Total return (dividends included).</div>
+          <div class="panel-header" style="border-top:1px solid var(--border)"><div class="panel-header-left"><span class="panel-title">How to read it</span></div></div>
+          <div class="panel-content" id="pair-read"></div>
+        </div>
+        <div class="panel col-all medium" data-panel="perf">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Relative performance</span><span class="legend" id="perf-legend"></span></div></div>
+          <div class="panel-content flush chart-host"><div class="chart-frame"><div class="chart" id="perf-chart"></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EVENTS: Polymarket, collected hourly -->
+    <!-- NEWS: headlines grouped into stories (collectors/news_collector.py), shipping chokepoints
+         (collectors/shipping_collector.py), the Fed calendar with Polymarket's odds. -->
+    <section class="view" id="view-news">
+      <div class="toolbar">
+        <span class="toolbar-label">Topic</span><span id="nw-topics"></span>
+        <span class="range" id="nw-hours"></span>
+        <input class="search" id="nw-search" type="search" placeholder="Search all headlines…">
+      </div>
+      <div class="grid" data-layout="news">
+        <div class="panel col-2 tall" data-panel="nw-top">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Top stories</span><span class="panel-count" id="nw-top-n">–</span></div><span class="badge" id="nw-badge">–</span></div>
+          <div class="panel-content" id="nw-top"></div>
+          <div class="panel-foot">Ranked by how many outlets carry a story, wires and official sources counting most, plus a bump for war, sanctions, default and similar words. Click a story for every outlet's headline.</div>
+        </div>
+        <div class="panel col-2 tall" data-panel="nw-latest">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title" id="nw-latest-title">Latest headlines</span><span class="panel-count" id="nw-latest-n">–</span></div></div>
+          <div class="panel-content" id="nw-latest"></div>
+        </div>
+        <div class="panel col-2 medium" data-panel="nw-ships">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Shipping chokepoints</span><span class="dim" id="nw-ships-asof"></span></div><span class="note">Ships per day</span></div>
+          <div class="panel-content flush" id="nw-ships"></div>
+          <div class="panel-foot">IMF PortWatch, from ship-tracking signals; runs 2–4 days behind and recent days get revised. "Normal" is Jan–Oct 2023, before the Red Sea attacks. Click a row for its full history.</div>
+        </div>
+        <div class="panel col-2 medium" data-panel="nw-fed">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Fed &amp; data calendar</span></div><span class="badge" id="nw-fed-badge">–</span></div>
+          <div class="panel-content" id="nw-fed"></div>
+        </div>
+        <div class="panel col-all medium" data-panel="nw-ship-chart">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title" id="nw-ship-chart-title">Chokepoint history</span></div><div class="range" id="nw-ship-range"></div></div>
+          <div class="panel-content flush chart-host"><div class="legend" id="nw-ship-legend"></div><div class="chart-frame"><div class="chart" id="nw-ship-chart"></div></div></div>
+        </div>
+        <div class="panel col-all compact" data-panel="nw-feeds">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Sources</span><span class="panel-count" id="nw-feeds-n">–</span></div><span class="note" id="nw-feeds-note"></span></div>
+          <div class="panel-content flush" id="nw-feeds"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-events">
+      <div class="toolbar">
+        <span class="toolbar-label">Group</span><span id="grp-chips"></span>
+        <input class="search" id="ev-search" type="search" placeholder="Search events…">
+      </div>
+      <div class="grid" data-layout="events">
+        <div class="panel col-2 medium" data-panel="movers">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Biggest movers · 24h</span></div><span class="badge" id="ev-badge">–</span></div>
+          <div class="panel-content" id="ev-movers"></div>
+        </div>
+        <div class="panel col-2 medium" data-panel="ending">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Resolving this week</span><span class="panel-count" id="ev-ending-n">–</span></div></div>
+          <div class="panel-content" id="ev-ending"></div>
+        </div>
+        <div class="panel col-all tall" data-panel="list">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title" id="ev-list-title">Events</span><span class="panel-count" id="ev-list-n">–</span></div><span class="note">Click an event for every outcome and its price history</span></div>
+          <div class="panel-content" id="ev-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GAMMA: the breakout tracker. Rules: collectors/scoring.py. Data: collectors/strategy_collector.py -->
+    <section class="view" id="view-gamma">
+      <div class="grid" data-layout="gamma">
+        <div class="panel col-all compact" data-panel="gm-summary">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Gamma breakout tracker</span><span class="dim" id="gm-date"></span></div>
+            <span class="badge" id="gm-badge">–</span></div>
+          <div class="stats" id="gm-stats" style="border-bottom:0"></div>
+        </div>
+        <div class="panel col-2 medium" data-panel="gm-levels">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Today's levels</span><span class="panel-count" id="gm-levels-n">–</span></div><span class="note">Click a stock for its chart</span></div>
+          <div class="panel-content flush" id="gm-levels"></div>
+        </div>
+        <div class="panel col-2 medium" data-panel="gm-chart">
+          <div class="panel-header">
+            <div class="panel-header-left"><span class="panel-title" id="gm-chart-title">Chart</span><span class="dim" id="gm-chart-sub"></span></div>
+            <div class="range" id="gm-range"></div>
+          </div>
+          <div class="panel-content flush chart-host"><div class="chart-frame"><div class="chart" id="gm-chart"></div></div></div>
+          <div class="panel-foot"><span class="legend" id="gm-legend"></span></div>
+        </div>
+        <div class="panel col-all compact" data-panel="gm-live">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Live breakouts</span><span class="panel-count" id="gm-live-n">0</span></div><span class="note">Above the wall now, waiting out the 30-minute hold</span></div>
+          <div class="panel-content" id="gm-live"></div>
+        </div>
+        <div class="panel col-all compact" data-panel="gm-score">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Scorecard</span></div><div class="range" id="gm-score-mode"></div></div>
+          <div class="panel-content flush" id="gm-score"></div>
+          <div class="panel-foot" id="gm-score-note"></div>
+        </div>
+        <div class="panel col-all medium" data-panel="gm-log">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Breakout log</span><span class="panel-count" id="gm-log-n">–</span></div><div class="range" id="gm-log-filter"></div></div>
+          <div class="panel-content flush" id="gm-log"></div>
+        </div>
+        <div class="panel col-all compact" data-panel="gm-rules">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">How it works</span></div></div>
+          <div class="panel-content"><p class="note" style="margin:0"><b>The idea:</b> when a big stock breaks above its call wall and holds, dealer hedging pushes it further up. This makes predictions and checks them. It never trades.<br>
+            <b>Prediction needs all three:</b> a 5-minute bar closes above the call wall; none of the next six bars closes below it (30-minute hold); volume so far today is more than 1.5× normal for that time of day.<br>
+            <b>Score, one point each:</b> sector ETF above its open and previous close; price above the gamma flip; crowded shorts (no free data yet, so this point is never earned). Score 1 is a prediction, 2 or more is strong, 0 is no prediction.<br>
+            <b>Grading:</b> checked at that day's close, the next close and three closes later. A prediction is wrong if any 5-minute bar closes back below the wall before the check. Every breakout is logged, including failures: they're what predictions get compared against.<br>
+            <b>Keep in mind:</b> walls and the flip are estimates. Open interest doesn't show which side dealers are on; the flip assumes they're short calls and long puts. Common theory says dealers dampen moves above the flip, so that point may point the wrong way, and the log will settle it. Bars run about 16 minutes behind on the free plan: fine for checking predictions, not for trading. Levels use yesterday's closing open interest and the last option snapshot before today.<br>
+            <b>Replay</b> days ran the same rules on past days after the fact, using what was known at the time. They're kept apart from the live forward test.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- POLITICS: the political game machine. Panels are built by politics.js once its data loads. -->
+    <section class="view" id="view-politics">
+      <div class="toolbar" id="pg-toolbar"><span class="toolbar-label">2028</span><span id="pg-nav"></span><span class="dim" id="pg-asof" style="margin-left:auto"></span></div>
+      <div class="pg-banner" id="pg-banner" hidden></div>
+      <div id="pg-grids"><div class="empty" style="padding:16px" id="pg-loading">Loading…</div></div>
+      <div id="pg-tip" role="status"></div>
+    </section>
+
+    <!-- SCORECARD: every model's record. New models log to the prediction ledger (collectors/ledger.py). -->
+    <section class="view" id="view-scorecard">
+      <div class="grid" data-layout="scorecard">
+        <div class="panel col-all compact" data-panel="sc-summary">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Model scorecard</span><span class="dim" id="sc-asof"></span></div>
+            <span class="badge" id="sc-badge">–</span></div>
+          <div class="panel-content flush" id="sc-summary"></div>
+          <div class="panel-foot">Every model is judged against a simple guess made at the same moment. "Too few to judge" until 30 predictions are resolved; after that it's only called better or worse when the gap is clearly bigger than luck.</div>
+        </div>
+        <div class="panel col-all medium" data-panel="sc-spx">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">S&amp;P 500 move size · next trading day</span><span class="dim" id="sc-spx-asof"></span></div>
+            <span class="note">Size, not direction</span></div>
+          <div class="panel-content flush chart-host"><div class="spx-wrap"><div class="spx-facts" id="sc-spx-facts"></div>
+            <div class="spx-chart-col"><div class="legend spx-legend" id="sc-spx-legend"></div><div class="chart-frame"><div class="chart" id="sc-spx-chart"></div></div></div></div></div>
+          <div class="panel-foot">Made each evening from values fixed at the close (S&amp;P range and gap, VIX, the previous day's dealer gamma, whether it fell, and tomorrow's Fed, CPI or jobs news). Chart: the last 120 predictions, live where they exist and backtest before that.</div>
+        </div>
+        <div class="panel col-2 compact" data-panel="sc-calibration">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Ranges vs reality</span></div><span class="note">Range models only</span></div>
+          <div class="panel-content flush" id="sc-calibration"></div>
+        </div>
+        <div class="panel col-2 compact" data-panel="sc-rules">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">How scoring works</span></div></div>
+          <div class="panel-content"><p class="note" style="margin:0"><b>Written down first:</b> a prediction is stamped when it's logged and refused if its window has already opened. No hindsight.<br>
+            <b>Never edited:</b> each live prediction is chained to the one before it, so a changed or deleted row fails the check. A retuned model is a new version with its own score.<br>
+            <b>Always next to a simple guess:</b> every prediction carries a baseline made at the same moment, scored the same way. A model is only worth keeping if it beats it.<br>
+            <b>Scores:</b> chances use the Brier score (saying 50% every time scores 0.25; lower is better). Ranges use the quantile loss, which punishes both missing and being too wide. "Smaller error" compares the two averages.<br>
+            <b>Live and backtest apart:</b> backtests rerun a model on past days with only what was known then. They can be rerun, so they're shown separately and never mixed into live results.<br>
+            <b>Gamma and Politics</b> keep their own records (the gamma rules you agreed; the political machine's chained log). This tab reads them as they are.</p></div>
+        </div>
+        <div class="panel col-all medium" data-panel="sc-recent">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Latest predictions</span><span class="panel-count" id="sc-recent-n">–</span></div><div class="range" id="sc-recent-mode"></div></div>
+          <div class="panel-content flush" id="sc-recent"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STATUS: every collector job -->
+    <section class="view" id="view-status">
+      <div class="grid" data-layout="status">
+        <div class="panel col-all compact" data-panel="jobs">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Collector jobs</span></div><span class="badge" id="db-size">–</span></div>
+          <div class="panel-content flush" id="jobs"></div>
+        </div>
+        <div class="panel col-all compact" data-panel="runs">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Recent runs</span></div></div>
+          <div class="panel-content flush" id="runs"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/vendor/lightweight-charts.js"></script>
+  <script src="/layout.js"></script>
+  <script src="/app.js"></script>
+  <script src="/gamma.js"></script>
+  <script src="/politics-engine.js"></script>
+  <script src="/politics.js"></script>
+  <script src="/scorecard.js"></script>
+  <script src="/news.js"></script>
+</body>
+</html>

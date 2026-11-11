@@ -1,0 +1,13 @@
+{
+  "stocks": {
+    "NVDA": "SMH", "AMD": "SMH", "AVGO": "SMH", "TSM": "SMH",
+    "AAPL": "XLK", "MSFT": "XLK", "ORCL": "XLK", "PLTR": "XLK",
+    "GOOGL": "XLC", "META": "XLC",
+    "AMZN": "XLY", "TSLA": "XLY",
+    "JPM": "XLF",
+    "LLY": "XLV"
+  },
+  "dealer_view": "short_calls_long_puts",
+  "wall_window_days": 30,
+  "volume_baseline_days": 20
+}

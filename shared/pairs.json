@@ -1,0 +1,28 @@
+{
+  "pairs": [
+    {
+      "id": "RSP-SPY",
+      "long": "RSP",
+      "short": "SPY",
+      "name": "Equal weight vs cap weight S&P 500",
+      "kind": "breadth",
+      "reads": "Rising: the average stock is beating the index (broad market). Falling: a few mega-caps are carrying it (narrow market)."
+    },
+    {
+      "id": "KO-PEP",
+      "long": "KO",
+      "short": "PEP",
+      "name": "Coca-Cola vs PepsiCo",
+      "kind": "pair",
+      "reads": "Rising: Coca-Cola is outperforming PepsiCo. Two staples with overlapping businesses (beverages), but PepsiCo also carries snacks (Frito-Lay), so snack-specific news moves the ratio too."
+    },
+    {
+      "id": "CVX-XOM",
+      "long": "CVX",
+      "short": "XOM",
+      "name": "Chevron vs Exxon Mobil",
+      "kind": "pair",
+      "reads": "Rising: Chevron is outperforming Exxon. Both are integrated oil majors that track crude closely, so the ratio mostly reflects company-specific news (production, deals, refining margins)."
+    }
+  ]
+}

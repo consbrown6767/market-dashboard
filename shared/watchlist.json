@@ -1,0 +1,19 @@
+{
+  "symbols": [
+    "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "TSLA", "AVGO", "AMD", "JPM",
+    "ORCL", "PLTR", "LLY", "TSM",
+    "SPY", "QQQ", "IWM", "DIA", "RSP",
+    "SMH", "XLK", "XLF", "XLE", "XLV", "XLY", "XLC", "XLI",
+    "TLT", "GLD", "HYG",
+    "QQQE", "MDY", "IWF", "IWD", "MTUM", "SPHB", "SPLV", "MAGS",
+    "SHY", "IEF", "TIP", "LQD",
+    "USO", "BNO", "UNG", "SLV", "CPER", "COPX", "GDX",
+    "XLP", "XLU", "XLB", "XLRE",
+    "KRE", "PEJ", "JETS", "XRT", "XHB", "IYT", "ITA", "IGV", "AIQ", "XBI", "XOP",
+    "EFA", "EEM", "FXI", "UUP", "FXY", "VXX", "IBIT", "ETHA"
+  ],
+  "hourly_snapshot": {
+    "max_days_to_expiry": 60,
+    "strike_range_pct": 25
+  }
+}

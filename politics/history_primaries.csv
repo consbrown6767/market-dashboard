@@ -1,0 +1,15 @@
+year,party,early_leader,sitting_or_former_vp_or_president,won_nomination
+1988,D,Gary Hart,N,N
+1988,R,George H.W. Bush,Y,Y
+1992,D,Mario Cuomo,N,N
+1996,R,Bob Dole,N,Y
+2000,D,Al Gore,Y,Y
+2000,R,George W. Bush,N,Y
+2004,D,Joe Lieberman,N,N
+2008,D,Hillary Clinton,N,N
+2008,R,Rudy Giuliani,N,N
+2012,R,Mitt Romney,N,Y
+2016,D,Hillary Clinton,N,Y
+2016,R,Jeb Bush,N,N
+2020,D,Joe Biden,Y,Y
+2024,R,Donald Trump,Y,Y

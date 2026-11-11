@@ -1,0 +1,80 @@
+/* Politics tab. Scoped to #view-politics so nothing here reaches the other tabs. The series colours
+   (raw, market, blend, parties) are the machine's own; everything else follows the dashboard. */
+
+#view-politics {
+  --panel: var(--surface); --panel2: var(--surface-hover); --line: var(--border); --soft: var(--border-subtle);
+  --muted: var(--text-dim); --faint: var(--text-muted);
+  --raw: #1f9c9a; --market: #b3872a; --blend: #8068d8; --c4: #c06a3e; --dem: #7da9ff; --rep: #ff8d89;
+}
+#view-politics .grid[hidden] { display: none; }
+#view-politics .toolbar { display: flex; align-items: center; gap: 6px; padding: 6px 8px; }
+#pg-nav { display: flex; gap: 2px; flex-wrap: wrap; }
+.pg-banner { margin: 0 var(--gap); padding: 6px 10px; font-size: 11px; color: var(--text-secondary); border: 1px solid color-mix(in srgb, var(--elevated) 40%, var(--border)); background: color-mix(in srgb, var(--elevated) 7%, var(--surface)); }
+.pg-banner b { color: var(--elevated); }
+#pg-tip { position: fixed; pointer-events: none; display: none; z-index: 40; max-width: 260px; padding: 6px 9px; font-size: 11px; color: var(--text); background: var(--bg); border: 1px solid var(--border-strong); }
+
+/* Default sizes on the 12-column grid, before panels go free-form */
+#view-politics .s3 { grid-column: span 3; }
+#view-politics .s4 { grid-column: span 4; }
+#view-politics .s5 { grid-column: span 5; }
+#view-politics .s6 { grid-column: span 6; }
+#view-politics .s7 { grid-column: span 7; }
+#view-politics .s8 { grid-column: span 8; }
+#view-politics .s12 { grid-column: span 12; }
+
+#view-politics .panel-content { font-size: 11px; line-height: 1.45; }
+#view-politics .panel-content > p:first-child { margin-top: 0; }
+#view-politics p.note { margin: 6px 0 0; color: var(--muted); }
+#view-politics .faint { color: var(--faint); }
+#view-politics .h2 { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+#view-politics .hero { font-size: 24px; font-weight: 700; color: var(--accent); }
+#view-politics .hero small { font-size: 11px; color: var(--muted); font-weight: 400; }
+#view-politics .triple { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 4px; color: var(--muted); }
+#view-politics .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; }
+#view-politics .pg-legend { display: flex; gap: 14px; flex-wrap: wrap; color: var(--muted); margin-bottom: 6px; font-size: 10px; }
+#view-politics .scroll { overflow-x: auto; }
+#view-politics .list { max-height: 520px; overflow-y: auto; }
+#view-politics td.l, #view-politics th.l { text-align: left; }
+#view-politics td { padding: 3px 6px; }
+#view-politics th { padding: 4px 6px; }
+#view-politics .panel-content a:not(.ext) { color: var(--raw); }
+
+#view-politics .pg-tabs { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; }
+#view-politics .panel-content button, #view-politics .panel-content select {
+  font: inherit; font-size: 10px; color: var(--muted); background: var(--panel2); border: 1px solid var(--line); padding: 2px 8px; cursor: pointer;
+}
+#view-politics .panel-content select { padding: 1px 3px; color: var(--text); }
+#view-politics .panel-content button:hover { color: var(--text); border-color: var(--border-strong); }
+#view-politics .panel-content button[aria-pressed=true] { color: var(--accent); border-color: var(--raw); }
+#view-politics .panel-content button:disabled { opacity: .45; cursor: default; }
+#view-politics .panel-content input[type=range] { width: 100%; accent-color: var(--raw); }
+#view-politics .panel-content label { color: var(--muted); }
+#view-politics .panel-content code { display: block; white-space: pre-wrap; word-break: break-word; font-family: var(--font-mono); font-size: 10px; background: var(--bg); border: 1px solid var(--line); padding: 8px; margin-top: 6px; color: var(--text); }
+
+#view-politics svg { display: block; width: 100%; height: auto; }
+#view-politics svg text { fill: var(--muted); font: 11px var(--font-mono); }
+
+#view-politics .tiles { display: grid; grid-template-columns: repeat(11, 1fr); gap: 3px; }
+#view-politics .tile { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; line-height: 1.1; min-width: 0; }
+#view-politics .tile b { font-weight: 600; }
+#view-politics .tile span { font-size: 10px; }
+#view-politics .tile.off { background: var(--panel2); color: var(--faint); opacity: .55; }
+#view-politics .pg-keys { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+#view-politics .pg-key { padding: 2px 6px; font-size: 10px; }
+
+#view-politics .turn { border-bottom: 1px solid var(--soft); padding: 5px 0; }
+#view-politics .phase { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--soft); }
+#view-politics .phase b { min-width: 190px; }
+#view-politics .phase.now b { color: var(--accent); }
+#view-politics .phase:not(.now) b { color: var(--muted); font-weight: 500; }
+
+#view-politics .gamecols { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 16px; }
+#view-politics .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+#view-politics .pg-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+#view-politics .pg-stat { background: var(--panel2); padding: 8px; }
+#view-politics .pg-stat .big { font-size: 18px; font-weight: 700; color: var(--accent); }
+
+@media (max-width: 900px) {
+  #view-politics .gamecols, #view-politics .two { grid-template-columns: minmax(0, 1fr); }
+  #view-politics .phase { display: block; }
+}

@@ -1,0 +1,16 @@
+# Data, logs, keys and backups live outside this folder (~/MarketData, ~/.config/market-dashboard, iCloud).
+# These are belt and braces in case something lands here by mistake.
+*.db
+*.db-wal
+*.db-shm
+*.db.gz
+*.gz
+*.env
+.env*
+backups/
+logs/
+__pycache__/
+*.pyc
+.DS_Store
+.Rhistory
+.claude/settings.local.json
