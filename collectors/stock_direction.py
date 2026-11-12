@@ -11,6 +11,8 @@ Usage (python stock_direction.py ...):
   backtest --final   the one run on the test period (v1, and v2 from tuning); logs it to the ledger
   live            weekday evenings: resolve due predictions; on a week's last trading day, predict next week
   live --dry-run [YYYY-MM-DD]   show what it would predict for that day; downloads and logs nothing
+  fresh --universe sp400   stage 3: the fixed versions on the 400 other S&P 500 stocks, tested once
+  (any command takes --universe sp100|sp400; default sp100)
 """
 
 from __future__ import annotations
@@ -30,7 +32,9 @@ from options_collector import (ALPACA_DATA, ET, PROJECT_DIR, alpaca, connect, fi
                                start_run)
 
 MODEL, VERSION = "stock-direction", "1"
-SP100_PATH = PROJECT_DIR / "shared" / "sp100.json"
+UNIVERSES = {"sp100": PROJECT_DIR / "shared" / "sp100.json",           # the live universe
+             "sp400": PROJECT_DIR / "shared" / "sp500_ex100.json"}     # stage 3: fresh stocks, test only
+_universe = "sp100"
 RESULTS_DIR = Path.home() / "MarketData" / "stock_direction"
 
 # ---- fixed by the plan
@@ -70,7 +74,16 @@ CREATE TABLE IF NOT EXISTS direction_iv_daily (
 
 
 def sp100() -> dict:
-    return json.loads(SP100_PATH.read_text())
+    """The stock list in use (S&P 100 unless --universe says otherwise), with each stock's sector."""
+    return json.loads(UNIVERSES[_universe].read_text())
+
+
+def all_stocks() -> list[str]:
+    out = []
+    for path in UNIVERSES.values():
+        if path.exists():
+            out += list(json.loads(path.read_text())["stocks"])
+    return out
 
 
 # ---------------------------------------------------------------- pricing
@@ -190,7 +203,7 @@ def implied_vol(price, S, K, T, r, is_call, iters=45):
 def job_data(db) -> tuple[str, int, str]:
     keys = load_keys()
     u = sp100()
-    symbols = sorted(set(u["stocks"]) | set(u["sector_etf"].values()) | {"SPY"})
+    symbols = sorted(set(all_stocks()) | set(u["sector_etf"].values()) | {"SPY"})
     now = datetime.now(ET).isoformat(timespec="seconds")
     rows = []
     for i in range(0, len(symbols), 50):
@@ -773,6 +786,42 @@ def backtest_final(db) -> dict:
     return out
 
 
+STAGE3_VERSIONS = {"1": {}, "1-learned": {"weights": "L"}, "3-skew": {"inputs": ("skew",)}}
+
+
+def fresh_test(db) -> dict:
+    """Stage 3 (PLAN.md): the fixed versions on stocks never looked at, fitted on their 2024-25 weeks and
+    tested once on 2026. Run with --universe sp400."""
+    if _universe == "sp100":
+        raise SystemExit("the fresh test is for stocks not yet looked at: use --universe sp400")
+    commit, dirty = _git_state()
+    if dirty:
+        raise SystemExit("commit the code and plan first: the run records the commit it ran from")
+    cache: dict = {}
+    out = {"model": MODEL, "universe": _universe, "commit": commit,
+           "run_at": datetime.now(ET).isoformat(timespec="seconds"), "versions": {}}
+    to_log = []
+    for name, ch in STAGE3_VERSIONS.items():
+        cfg = {**V1, **ch}
+        p = ranked(db, cfg, cache)
+        build, _ = split(p)
+        folds = fold_scores(p, cfg)
+        test, rep, fitted = run_on_test(db, cfg, cache)
+        col = _model_col(cfg)
+        out["versions"][name] = {
+            "cfg": cfg, "fitted_on_building": fitted, "building_weeks": int(build["block"].nunique()),
+            "two_year_check": {k: v["vs_base"] for k, v in folds.items()},
+            "building_inputs": input_records(predict(fit(build, cfg["inputs"]), build)),
+            "test": rep, "verdict": verdict(rep, col)}
+        to_log.append((f"{name}@{_universe}", test, col))
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    path = RESULTS_DIR / f"fresh-{_universe}-{date.today().isoformat()}.json"
+    path.write_text(json.dumps(out, indent=2, default=str))
+    out["saved_to"] = str(path)
+    out["ledger_rows"] = log_backtest(db, to_log)
+    return out
+
+
 def log_backtest(db, runs: list[tuple[str, pd.DataFrame, str]]) -> int:
     """Test-period predictions into the ledger as backtests: (version, predictions, column) each."""
     import ledger
@@ -939,7 +988,14 @@ def job_live(db, as_of: date | None = None, dry: bool = False) -> tuple[str, int
 # ---------------------------------------------------------------- command line
 
 def main() -> int:
+    global _universe
     args = sys.argv[1:]
+    if "--universe" in args:
+        i = args.index("--universe")
+        _universe = args[i + 1]
+        if _universe not in UNIVERSES:
+            raise SystemExit(f"universe must be one of {list(UNIVERSES)}")
+        del args[i:i + 2]
     cmd = args[0] if args else ""
     db = connect()
     db.executescript(SCHEMA)
@@ -968,6 +1024,14 @@ def main() -> int:
         print(detail)
     elif cmd == "explore":
         print(json.dumps(explore(db), indent=2, default=str))
+    elif cmd == "fresh":
+        out = fresh_test(db)
+        for name, v in out["versions"].items():
+            t = v["test"]
+            print(f"{name:10} verdict {v['verdict']:10} test weeks {t['weeks']} preds {t['predictions']}  "
+                  + "  ".join(f"{k} {x['gap'] * 1e4:+.2f}±{x['gap_se'] * 1e4:.2f}" for k, x in t["vs"].items()
+                              if k.startswith(_model_col(v['cfg']) + " vs")))
+        print("saved", out["saved_to"], "ledger rows", out["ledger_rows"])
     elif cmd == "tune":
         out = tune(db)
         print(json.dumps({k: v for k, v in out.items() if k != "log"}, indent=2, default=str))
