@@ -12,6 +12,8 @@ Usage (python stock_direction.py ...):
   live            weekday evenings: resolve due predictions; on a week's last trading day, predict next week
   live --dry-run [YYYY-MM-DD]   show what it would predict for that day; downloads and logs nothing
   fresh --universe sp400   stage 3: the fixed versions on the 400 other S&P 500 stocks, tested once
+  earnings [SYMBOLS]   earnings dates and surprises from Yahoo
+  signals         stage 4: the five extra signals (and all research signals together), tested once
   (any command takes --universe sp100|sp400; default sp100)
 """
 
@@ -55,6 +57,12 @@ INPUTS = ("gap", "skew", "change", "rel_week")
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS dividends (
     symbol TEXT, ex_date TEXT, amount REAL, source TEXT, fetched_at TEXT, PRIMARY KEY (symbol, ex_date)
+);
+-- Earnings report dates and EPS surprises from Yahoo Finance (unofficial). ts is the report time
+-- (Eastern); timing: bmo = before the open, amc = after the close, during = in trading hours.
+CREATE TABLE IF NOT EXISTS earnings_dates (
+    symbol TEXT, ts TEXT, timing TEXT, eps_estimate REAL, eps_reported REAL, surprise_pct REAL,
+    source TEXT, fetched_at TEXT, PRIMARY KEY (symbol, ts)
 );
 CREATE TABLE IF NOT EXISTS rates_daily (
     series TEXT, date TEXT, value REAL, source TEXT, fetched_at TEXT, PRIMARY KEY (series, date)
@@ -458,7 +466,9 @@ def build_panel(db, min_trades: int = MIN_TRADES, tuesday_only: bool = False, sk
                          "skew": weekly["skew"].at[b, s] if s in weekly["skew"] else np.nan,
                          "dcvol": dc.at[b, s] if s in dc else np.nan,
                          "dpvol": dp.at[b, s] if s in dp else np.nan,
-                         "rel_week": r_week, "excess": r_out - spy})
+                         "rel_week": r_week, "excess": r_out - spy,
+                         "cvol_w": weekly["cvol"].at[b, s] if s in weekly["cvol"] else np.nan,
+                         "pvol_w": weekly["pvol"].at[b, s] if s in weekly["pvol"] else np.nan})
     p = pd.DataFrame(rows)
     if keep_unresolved:
         p["y"] = np.where(p["excess"].isna(), np.nan, (p["excess"] > 0).astype(float))
@@ -478,6 +488,103 @@ V1 = {"min_trades": MIN_TRADES, "week_stat": "median", "skew_col": "skew", "tues
 PANEL_KEYS = ("min_trades", "week_stat", "skew_col", "tuesday_only")
 
 
+def _reaction_day(ts: pd.Timestamp, days: list[date]) -> date | None:
+    """The first trading day whose close reflects a report: the same day if it came before or during
+    trading, the next trading day if after the close."""
+    d = ts.date()
+    after_close = ts.hour >= 16
+    for x in days:
+        if (x > d) if after_close else (x >= d):
+            return x
+    return None
+
+
+def add_extra_signals(db, p: pd.DataFrame) -> pd.DataFrame:
+    """Stage 4 signals (PLAN.md): os, earn, pead, rvi, max. All from data through the prediction day,
+    except earn, which uses the report dates inside the window (scheduled in advance)."""
+    p = p.copy()
+    stocks = sorted(p["stock"].unique())
+    days = _trading_days(db)
+    idx = {d: i for i, d in enumerate(days)}
+    q = ",".join("?" * len(stocks))
+    # os: option contracts / shares, per Wednesday-Tuesday week
+    ov = pd.read_sql(f"SELECT underlying AS stock, date, SUM(volume) AS ov FROM option_bars_daily "
+                     f"WHERE underlying IN ({q}) GROUP BY underlying, date", db, params=stocks)
+    sv = pd.read_sql(f"SELECT symbol AS stock, date, volume AS sv FROM stock_bars_daily WHERE symbol IN ({q})",
+                     db, params=stocks)
+    v = sv.merge(ov, on=["stock", "date"], how="left").fillna({"ov": 0.0})
+    v["block"] = pd.to_datetime(v["date"]).dt.date.map(_block)
+    wk = v.groupby(["stock", "block"])[["ov", "sv"]].sum()
+    os_ = (wk["ov"] / wk["sv"]).where(wk["ov"] > 0)
+    p["os"] = [os_.get((s, b), np.nan) for s, b in zip(p["stock"], p["block"])]
+    # rvi and max from daily total returns over the 21 trading days ending the prediction day
+    tri = _total_return_index(db, stocks)
+    tri.index = pd.to_datetime(tri.index).date
+    r = tri.pct_change(fill_method=None)
+    rv = np.log1p(r).rolling(21, min_periods=18).std() * math.sqrt(252)
+    mx = r.rolling(21, min_periods=18).max()
+    look = lambda frame, d, s: frame.at[d, s] if (d in frame.index and s in frame.columns) else np.nan
+    p["rv21"] = [look(rv, d, s) for d, s in zip(p["pred_day"], p["stock"])]
+    p["max"] = [look(mx, d, s) for d, s in zip(p["pred_day"], p["stock"])]
+    p["rvi"] = p["rv21"] - (p["cvol_w"] + p["pvol_w"]) / 2
+    # earn and pead from report dates
+    e = pd.read_sql(f"SELECT symbol AS stock, ts, surprise_pct FROM earnings_dates WHERE symbol IN ({q})",
+                    db, params=stocks)
+    have = set(e["stock"])
+    e["react"] = [_reaction_day(pd.Timestamp(t), days) for t in e["ts"]]
+    e = e.dropna(subset=["react"])
+    by_stock = {s: g.sort_values("react") for s, g in e.groupby("stock")}
+    earn, pead = [], []
+    for s, pred, start, end in zip(p["stock"], p["pred_day"], p["start"], p["end"]):
+        if s not in have:
+            earn.append(np.nan); pead.append(np.nan); continue
+        g = by_stock.get(s)
+        if g is None:
+            earn.append(0.0); pead.append(0.0); continue
+        earn.append(float(((g["react"] > start) & (g["react"] <= end)).any()))
+        t = idx.get(pred)
+        recent = g[[t is not None and 2 <= t - idx.get(x, -10**6) <= 60 for x in g["react"]]]
+        sp = recent["surprise_pct"].iloc[-1] if len(recent) else 0.0
+        pead.append(0.0 if pd.isna(sp) else float(sp))
+    p["earn"], p["pead"] = earn, pead
+    return p
+
+
+def job_earnings(db, symbols: list[str]) -> tuple[str, int, str]:
+    """Earnings dates and surprises from Yahoo (about 6 years back plus the next scheduled report)."""
+    import time
+    import truststore
+    truststore.inject_into_ssl()
+    import yfinance as yf
+    now = datetime.now(ET).isoformat(timespec="seconds")
+    n, failed = 0, []
+    for s in symbols:
+        try:
+            d = yf.Ticker(s.replace(".", "-")).get_earnings_dates(limit=28)
+        except Exception as ex:
+            failed.append(f"{s}: {ex}")
+            continue
+        if d is None or d.empty:
+            failed.append(f"{s}: none")
+            continue
+        rows = []
+        for ts, r in d.iterrows():
+            t = ts.tz_convert(ET)
+            timing = "bmo" if t.hour < 9 or (t.hour == 9 and t.minute < 30) else "amc" if t.hour >= 16 else "during"
+            rows.append((s, t.isoformat(), timing, r.get("EPS Estimate"), r.get("Reported EPS"),
+                         r.get("Surprise(%)"), "yahoo", now))
+        db.executemany("INSERT OR REPLACE INTO earnings_dates VALUES (?,?,?,?,?,?,?,?)",
+                       [tuple(None if (isinstance(x, float) and math.isnan(x)) else x for x in row) for row in rows])
+        db.commit()
+        n += len(rows)
+        time.sleep(0.4)
+    status = "ok" if not failed else "partial" if n else "failed"
+    return status, n, f"rows={n}" + (f"; failed {len(failed)}: " + " | ".join(failed[:20]) if failed else "")
+
+
+EXTRA = {"os": -1, "earn": 1, "pead": 1, "rvi": -1, "max": -1}   # stage 4 signals and their planned direction
+
+
 def add_ranks(p: pd.DataFrame, wobble: bool = False, rel_dir: int = 1, inputs=INPUTS) -> pd.DataFrame:
     """Within each week, among stocks with every input: ranks from 0 to 1, turned so 1 = more likely to beat.
     The same stock-weeks are kept whichever inputs are used, so versions are compared on the same rows."""
@@ -489,13 +596,16 @@ def add_ranks(p: pd.DataFrame, wobble: bool = False, rel_dir: int = 1, inputs=IN
             p[col] = p.groupby("stock")[col].transform(
                 lambda s: s.rolling(WOBBLE_WEEKS + 1, min_periods=WOBBLE_WEEKS + 1)
                 .apply(lambda w: (w[:-1] < w[-1]).mean() if not np.isnan(w).any() else np.nan, raw=True))
-    need = ["gap", "skew", "dcvol", "dpvol", "rel_week"]
+    need = ["gap", "skew", "dcvol", "dpvol", "rel_week"] + [k for k in inputs if k in EXTRA]
     p = p.dropna(subset=need).copy()
     g = p.groupby("block")
     p["r_gap"] = g["gap"].transform(_pct_rank)
     p["r_skew"] = g["skew"].transform(lambda s: _pct_rank(-s))
     p["r_change"] = (g["dcvol"].transform(_pct_rank) + g["dpvol"].transform(lambda s: _pct_rank(-s))) / 2
     p["r_rel_week"] = g["rel_week"].transform(lambda s: _pct_rank(rel_dir * s))
+    for k, sign in EXTRA.items():
+        if k in p.columns:
+            p[f"r_{k}"] = g[k].transform(lambda s, sign=sign: _pct_rank(sign * s))
     p["score"] = p[[f"r_{k}" for k in inputs]].mean(axis=1)
     p["n_week"] = g["stock"].transform("count")
     return p[p["n_week"] >= 10]
@@ -509,6 +619,14 @@ def ranked(db, cfg: dict, cache: dict | None = None, **panel_kw) -> pd.DataFrame
         base = build_panel(db, **{k: cfg[k] for k in PANEL_KEYS}, **panel_kw)
         if cache is not None:
             cache[key] = base
+    if any(k in EXTRA for k in cfg["inputs"]):
+        xkey = ("extra",) + key
+        if cache is not None and xkey in cache:
+            base = cache[xkey]
+        else:
+            base = add_extra_signals(db, base)
+            if cache is not None:
+                cache[xkey] = base
     return add_ranks(base, wobble=cfg["wobble"], rel_dir=cfg["rel_dir"], inputs=cfg["inputs"])
 
 
@@ -786,14 +904,14 @@ def backtest_final(db) -> dict:
     return out
 
 
-STAGE3_VERSIONS = {"1": {}, "1-learned": {"weights": "L"}, "3-skew": {"inputs": ("skew",)}}
+STAGE4_VERSIONS = {"4-os": {"inputs": ("os",)}, "4-earn": {"inputs": ("earn",)}, "4-pead": {"inputs": ("pead",)},
+                   "4-rvi": {"inputs": ("rvi",)}, "4-max": {"inputs": ("max",)},
+                   "5-research": {"inputs": ("skew", "os", "earn", "pead", "rvi", "max")}}
+STAGE3_VERSIONS = {"1": {}, "1-learned": {"weights": "L"}, "3-skew": {"inputs": ("skew",)}, **STAGE4_VERSIONS}
 
 
-def fresh_test(db) -> dict:
-    """Stage 3 (PLAN.md): the fixed versions on stocks never looked at, fitted on their 2024-25 weeks and
-    tested once on 2026. Run with --universe sp400."""
-    if _universe == "sp100":
-        raise SystemExit("the fresh test is for stocks not yet looked at: use --universe sp400")
+def run_versions(db, versions: dict, tag: str) -> dict:
+    """Each version: fitted on 2024-25, the two-year check, each input's record, and one run on 2026."""
     commit, dirty = _git_state()
     if dirty:
         raise SystemExit("commit the code and plan first: the run records the commit it ran from")
@@ -801,25 +919,45 @@ def fresh_test(db) -> dict:
     out = {"model": MODEL, "universe": _universe, "commit": commit,
            "run_at": datetime.now(ET).isoformat(timespec="seconds"), "versions": {}}
     to_log = []
-    for name, ch in STAGE3_VERSIONS.items():
+    for name, ch in versions.items():
         cfg = {**V1, **ch}
         p = ranked(db, cfg, cache)
         build, _ = split(p)
         folds = fold_scores(p, cfg)
         test, rep, fitted = run_on_test(db, cfg, cache)
         col = _model_col(cfg)
+        cols = [f"r_{k}" for k in cfg["inputs"]]
         out["versions"][name] = {
             "cfg": cfg, "fitted_on_building": fitted, "building_weeks": int(build["block"].nunique()),
             "two_year_check": {k: v["vs_base"] for k, v in folds.items()},
-            "building_inputs": input_records(predict(fit(build, cfg["inputs"]), build)),
+            "building_inputs": {c: v for c, v in _records(build, cols).items()},
+            "test_inputs": {c: v for c, v in _records(test, cols).items()},
             "test": rep, "verdict": verdict(rep, col)}
-        to_log.append((f"{name}@{_universe}", test, col))
+        to_log.append((name if _universe == "sp100" else f"{name}@{_universe}", test, col))
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    path = RESULTS_DIR / f"fresh-{_universe}-{date.today().isoformat()}.json"
+    path = RESULTS_DIR / f"{tag}-{_universe}-{date.today().isoformat()}.json"
     path.write_text(json.dumps(out, indent=2, default=str))
     out["saved_to"] = str(path)
     out["ledger_rows"] = log_backtest(db, to_log)
     return out
+
+
+def _records(p: pd.DataFrame, cols: list[str]) -> dict:
+    out = {}
+    for col in cols:
+        ics = p.groupby("block").apply(lambda g: g[col].corr(g["excess"].rank(), method="spearman"),
+                                       include_groups=False).dropna()
+        if len(ics) > 2:
+            out[col] = {"mean_ic": float(ics.mean()), "t": float(ics.mean() / (ics.std(ddof=1) / math.sqrt(len(ics)))),
+                        "weeks": int(len(ics)), "share_positive": float((ics > 0).mean())}
+    return out
+
+
+def fresh_test(db) -> dict:
+    """Stage 3 (PLAN.md): the fixed versions on stocks never looked at. Run with --universe sp400."""
+    if _universe == "sp100":
+        raise SystemExit("the fresh test is for stocks not yet looked at: use --universe sp400")
+    return run_versions(db, STAGE3_VERSIONS, "fresh")
 
 
 def log_backtest(db, runs: list[tuple[str, pd.DataFrame, str]]) -> int:
@@ -1024,6 +1162,23 @@ def main() -> int:
         print(detail)
     elif cmd == "explore":
         print(json.dumps(explore(db), indent=2, default=str))
+    elif cmd == "earnings":
+        syms = [a.upper() for a in args[1:]] or list(sp100()["stocks"])
+        run = start_run(db, "direction-earnings")
+        status, n, detail = job_earnings(db, syms)
+        finish_run(db, run, status, n, detail)
+        print(detail)
+    elif cmd == "signals":
+        out = run_versions(db, STAGE4_VERSIONS, "signals")
+        for name, v in out["versions"].items():
+            t = v["test"]
+            print(f"{name:11} verdict {v['verdict']:10} 2yr " + " ".join(f"{x['gap'] * 1e4:+.2f}" for x in v["two_year_check"].values())
+                  + "  2026 " + "  ".join(f"{k.split(' vs ')[1]} {x['gap'] * 1e4:+.2f}±{x['gap_se'] * 1e4:.2f}"
+                                         for k, x in t["vs"].items() if k.startswith(_model_col(v['cfg']) + " vs")))
+            for c in v["building_inputs"]:
+                b, tt = v["building_inputs"][c], v["test_inputs"].get(c, {})
+                print(f"    {c:9} IC build {b['mean_ic']:+.4f} (t {b['t']:+.2f})  test {tt.get('mean_ic', float('nan')):+.4f} (t {tt.get('t', float('nan')):+.2f})")
+        print("saved", out["saved_to"], "ledger rows", out["ledger_rows"])
     elif cmd == "fresh":
         out = fresh_test(db)
         for name, v in out["versions"].items():

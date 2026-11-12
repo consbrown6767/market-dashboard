@@ -135,5 +135,16 @@ class WeekValues(unittest.TestCase):
         self.assertAlmostEqual(r["gap"], -0.1)
 
 
+class Earnings(unittest.TestCase):
+    def test_reaction_day(self):
+        days = [date(2026, 11, d) for d in (2, 3, 4, 5, 6, 9)]
+        ts = lambda h: pd.Timestamp(f"2026-11-04 {h}:00", tz="America/New_York")
+        self.assertEqual(m._reaction_day(ts("07"), days), date(2026, 11, 4))   # before the open: that day
+        self.assertEqual(m._reaction_day(ts("12"), days), date(2026, 11, 4))   # during trading: that day
+        self.assertEqual(m._reaction_day(ts("16"), days), date(2026, 11, 5))   # after the close: next day
+        fri = pd.Timestamp("2026-11-06 16:05", tz="America/New_York")
+        self.assertEqual(m._reaction_day(fri, days), date(2026, 11, 9))        # Friday evening: Monday
+
+
 if __name__ == "__main__":
     unittest.main()
