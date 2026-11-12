@@ -117,5 +117,23 @@ class Ranks(unittest.TestCase):
         self.assertTrue(m.add_ranks(p).empty)
 
 
+class WeekValues(unittest.TestCase):
+    def test_week_statistics(self):
+        df = pd.DataFrame({"k": ["a"] * 5, "v": [1.0, 1.0, 5.0, 9.0, 100.0]})
+        g = df.groupby("k")["v"]
+        self.assertEqual(m.week_value(g, "median")["a"], 5.0)
+        self.assertEqual(m.week_value(g, "mean")["a"], 23.2)
+        self.assertEqual(m.week_value(g, "trimmed")["a"], 5.0)            # middle three: 1, 5, 9
+        self.assertAlmostEqual(m.week_value(g, "mix2")["a"], 14.1)
+        self.assertAlmostEqual(m.week_value(g, "mix3")["a"], (5 + 23.2 + 5) / 3)
+
+    def test_paired_uses_shared_rows_only(self):
+        a = pd.DataFrame({"block": [1, 1, 2], "stock": ["x", "y", "x"], "loss": [0.2, 0.2, 0.2]})
+        b = pd.DataFrame({"block": [1, 2, 2], "stock": ["x", "x", "z"], "loss": [0.3, 0.3, 9.0]})
+        r = m.paired(a, b)
+        self.assertEqual(r["shared_rows"], 2)
+        self.assertAlmostEqual(r["gap"], -0.1)
+
+
 if __name__ == "__main__":
     unittest.main()

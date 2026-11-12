@@ -165,9 +165,38 @@ to say about a single week, added without a reason tied to this model.
   average price and the stock's average price then come from different moments. On 2025-04-09 (AAPL up
   15% intraday) the gap read -13 points. The median of 5 days ignores one or two such days. This is a
   weakness of our data (no quotes), not a choice in the research; the mean is kept as a robustness check.
+- 2026-11-11, a week counts only if at least 10 stocks have every input (judgment: ranks among a
+  handful of stocks mean little). Only affects thin early weeks, if any.
 - 2026-11-11, windows: the outcome window starts at the first trading day after the prediction day and
   ends at the first trading day after the next week's prediction day (normally Wednesday to Wednesday).
   When a Wednesday is a holiday this moves to Thursday, so a day is always skipped after the inputs.
+
+## Stage 2: tuning, then one final test (added 2026-11-11, before any result)
+
+The owner asked for the models to be compared, changed on what's seen, and tested again. To keep the
+2026 test fair, every change is chosen on 2024-25 only:
+
+- **Two folds inside the building period:** learn on 2024 and score 2025, then learn on 2025 and score
+  2024. Same fitting as the main plan, just on one year.
+- **Variants tried, one at a time from v1:**
+  - weekly value: mean, trimmed mean (the average without the week's highest and lowest day), half
+    median and half mean, a third each of median, mean and trimmed (all the owner's suggestions), and
+    Tuesday only;
+  - minimum trades 1 and 10;
+  - crash protection from the single closest options;
+  - change measured against the stock's own normal wobble;
+  - last week's move reversing instead of continuing;
+  - each input dropped in turn;
+  - learned weights instead of equal.
+- **Adoption rule:** a change is adopted only if it beats v1 in **both** folds (scored on the stock-weeks
+  both versions have). Within a group, the one with the best average gain. One change per group, then
+  combined into v2. If the combination doesn't beat v1 in both folds, v2 is the single best change.
+  If nothing beats v1 in both folds, there is no v2.
+- **Final test:** v1 (as planned above) and v2 each run once on 2026, fitted on all of 2024-25.
+  Same pass rules. v2 also has to beat v1 there to replace it. Every variant tried is listed in the
+  write-up, so the number of tries is on record.
+- **Going live** (owner's OK, 2026-11-11, as long as it costs nothing): the version that passes goes
+  into the ledger as a live model with a weekly job. If none passes, nothing goes live.
 
 ## Changes after results
 

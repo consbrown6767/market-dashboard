@@ -7,7 +7,8 @@ Usage (python stock_direction.py ...):
   data            cash dividends (Alpaca) and the 3-month T-bill rate (FRED DTB3) into the DB
   iv [SYM ...]    daily implied-volatility measures from option_bars_daily (default: all S&P 100)
   explore         building period only: each input's record and the learned weights (the answer key)
-  backtest --final   the one run on the test period; logs it to the ledger as a backtest
+  tune            building period only: try the planned variants, learn 2024/score 2025 and back
+  backtest --final   the one run on the test period (v1, and v2 from tuning); logs it to the ledger
 """
 
 from __future__ import annotations
@@ -350,6 +351,33 @@ def _total_return_index(db, symbols: list[str]) -> pd.DataFrame:
     return px.pivot(index="date", columns="symbol", values="tri").sort_index()
 
 
+def _trimmed(x: np.ndarray) -> float:
+    """Average without the outliers: drop the highest and the lowest day (with 3 days, the middle one)."""
+    x = np.sort(x)
+    return float(x[1:-1].mean()) if len(x) >= 3 else float(x.mean())
+
+
+WEEK_STATS = ("median", "mean", "trimmed", "mix2", "mix3")
+
+
+def week_value(g, how: str) -> pd.Series:
+    """One number per stock-week from its daily values. median: the middle day. mean: the average.
+    trimmed: the average without the highest and lowest day. mix2: half median, half mean.
+    mix3: a third each of median, mean and trimmed (the owner's suggestions, 2026-11-11)."""
+    if how == "median":
+        return g.median()
+    if how == "mean":
+        return g.mean()
+    tr = g.agg(lambda s: _trimmed(s.to_numpy()))
+    if how == "trimmed":
+        return tr
+    if how == "mix2":
+        return 0.5 * g.median() + 0.5 * g.mean()
+    if how == "mix3":
+        return (g.median() + g.mean() + tr) / 3
+    raise ValueError(how)
+
+
 def build_panel(db, min_trades: int = MIN_TRADES, tuesday_only: bool = False, skew_col: str = "skew",
                 week_stat: str = "median") -> pd.DataFrame:
     """One row per (prediction week, stock): raw inputs, excess return over the outcome window, outcome."""
@@ -377,7 +405,7 @@ def build_panel(db, min_trades: int = MIN_TRADES, tuesday_only: bool = False, sk
     weekly = {}
     for col in ("gap", "skew", "cvol", "pvol"):
         g = iv.dropna(subset=[col]).groupby(["underlying", "block"])[col]
-        w = (g.median() if week_stat == "median" else g.mean()).where(g.count() >= need)
+        w = week_value(g, week_stat).where(g.count() >= need)
         weekly[col] = w.unstack("underlying")           # rows: block, columns: stock
     blk_index = pd.Index(order)
     for k in weekly:
@@ -421,13 +449,19 @@ def _pct_rank(x: pd.Series) -> pd.Series:
     return (x.rank(method="average") - 1) / (n - 1) if n > 1 else x * np.nan
 
 
-def add_ranks(p: pd.DataFrame, wobble: bool = False) -> pd.DataFrame:
-    """Within each week, among stocks with every input: ranks from 0 to 1, turned so 1 = more likely to beat."""
+V1 = {"min_trades": MIN_TRADES, "week_stat": "median", "skew_col": "skew", "tuesday_only": False,
+      "wobble": False, "rel_dir": 1, "inputs": INPUTS, "weights": "E"}
+PANEL_KEYS = ("min_trades", "week_stat", "skew_col", "tuesday_only")
+
+
+def add_ranks(p: pd.DataFrame, wobble: bool = False, rel_dir: int = 1, inputs=INPUTS) -> pd.DataFrame:
+    """Within each week, among stocks with every input: ranks from 0 to 1, turned so 1 = more likely to beat.
+    The same stock-weeks are kept whichever inputs are used, so versions are compared on the same rows."""
     p = p.copy()
     if wobble:
         # The owner's "normal wobble": each change against the same stock's past 26 weekly changes.
+        p = p.sort_values(["stock", "block"])
         for col in ("dcvol", "dpvol"):
-            p = p.sort_values(["stock", "block"])
             p[col] = p.groupby("stock")[col].transform(
                 lambda s: s.rolling(WOBBLE_WEEKS + 1, min_periods=WOBBLE_WEEKS + 1)
                 .apply(lambda w: (w[:-1] < w[-1]).mean() if not np.isnan(w).any() else np.nan, raw=True))
@@ -437,10 +471,21 @@ def add_ranks(p: pd.DataFrame, wobble: bool = False) -> pd.DataFrame:
     p["r_gap"] = g["gap"].transform(_pct_rank)
     p["r_skew"] = g["skew"].transform(lambda s: _pct_rank(-s))
     p["r_change"] = (g["dcvol"].transform(_pct_rank) + g["dpvol"].transform(lambda s: _pct_rank(-s))) / 2
-    p["r_rel_week"] = g["rel_week"].transform(_pct_rank)
-    p["score"] = p[["r_gap", "r_skew", "r_change", "r_rel_week"]].mean(axis=1)
+    p["r_rel_week"] = g["rel_week"].transform(lambda s: _pct_rank(rel_dir * s))
+    p["score"] = p[[f"r_{k}" for k in inputs]].mean(axis=1)
     p["n_week"] = g["stock"].transform("count")
     return p[p["n_week"] >= 10]
+
+
+def ranked(db, cfg: dict, cache: dict | None = None) -> pd.DataFrame:
+    key = tuple(cfg[k] for k in PANEL_KEYS)
+    if cache is not None and key in cache:
+        base = cache[key]
+    else:
+        base = build_panel(db, **{k: cfg[k] for k in PANEL_KEYS})
+        if cache is not None:
+            cache[key] = base
+    return add_ranks(base, wobble=cfg["wobble"], rel_dir=cfg["rel_dir"], inputs=cfg["inputs"])
 
 
 def split(p: pd.DataFrame):
@@ -457,9 +502,9 @@ def _logit(X, y):
     return m
 
 
-def fit(build: pd.DataFrame) -> dict:
-    rank_cols = ["r_gap", "r_skew", "r_change", "r_rel_week"]
-    return {"base_rate": float(build["y"].mean()),
+def fit(build: pd.DataFrame, inputs=INPUTS) -> dict:
+    rank_cols = [f"r_{k}" for k in inputs]
+    return {"base_rate": float(build["y"].mean()), "inputs": tuple(inputs),
             "E": _logit(build[["score"]].to_numpy() - 0.5, build["y"]),
             "L": _logit(build[rank_cols].to_numpy() - 0.5, build["y"]),
             "price": _logit(build[["r_rel_week"]].to_numpy() - 0.5, build["y"])}
@@ -468,7 +513,7 @@ def fit(build: pd.DataFrame) -> dict:
 def predict(models: dict, p: pd.DataFrame) -> pd.DataFrame:
     p = p.copy()
     p["p_E"] = models["E"].predict_proba(p[["score"]].to_numpy() - 0.5)[:, 1]
-    p["p_L"] = models["L"].predict_proba(p[["r_gap", "r_skew", "r_change", "r_rel_week"]].to_numpy() - 0.5)[:, 1]
+    p["p_L"] = models["L"].predict_proba(p[[f"r_{k}" for k in models["inputs"]]].to_numpy() - 0.5)[:, 1]
     p["p_price"] = models["price"].predict_proba(p[["r_rel_week"]].to_numpy() - 0.5)[:, 1]
     p["p_base"] = models["base_rate"]
     p["p_coin"] = 0.5
@@ -532,12 +577,12 @@ def _models_summary(models: dict) -> dict:
     return {"base_rate": models["base_rate"],
             "E": {"intercept": float(models["E"].intercept_[0]), "slope": float(models["E"].coef_[0][0])},
             "L": {"intercept": float(models["L"].intercept_[0]),
-                  **{k: float(v) for k, v in zip(INPUTS, models["L"].coef_[0])}},
+                  **{k: float(v) for k, v in zip(models["inputs"], models["L"].coef_[0])}},
             "price": {"intercept": float(models["price"].intercept_[0]), "slope": float(models["price"].coef_[0][0])}}
 
 
 def explore(db) -> dict:
-    p = add_ranks(build_panel(db))
+    p = ranked(db, V1)
     build, _ = split(p)
     models = fit(build)
     out = {"note": "BUILDING PERIOD ONLY, in-sample (the answer key). Not a test.",
@@ -545,64 +590,184 @@ def explore(db) -> dict:
     return out
 
 
-def verdict(rep: dict) -> dict:
+# ---------------------------------------------------------------- tuning on 2024-25 only
+# Two folds inside the building period: learn on 2024 and score 2025, then learn on 2025 and score
+# 2024. A change is adopted only if it beats v1 in BOTH folds (one lucky year isn't enough). The test
+# period is never read here. Rules written in docs/stock-direction/PLAN.md before this ran.
+
+FOLD_SPLIT = date(2024, 12, 31)
+
+
+def _folds(p: pd.DataFrame):
+    end = pd.to_datetime(p["end"]).dt.date
+    a = p[end <= FOLD_SPLIT]
+    b = p[(end > FOLD_SPLIT) & (end <= BUILD_END)]
+    return a, b
+
+
+def _model_col(cfg: dict) -> str:
+    return "p_E" if cfg["weights"] == "E" else "p_L"
+
+
+def fold_scores(p: pd.DataFrame, cfg: dict) -> dict:
+    """Per fold: weekly Brier gap of the model against the base rate, both learned on the other year."""
+    a, b = _folds(p)
+    out = {}
+    for name, learn, score in (("learn24_score25", a, b), ("learn25_score24", b, a)):
+        models = fit(learn, cfg["inputs"])
+        sc = predict(models, score)
+        rows = sc[["block", "stock", "y"]].assign(loss=(sc[_model_col(cfg)] - sc["y"]) ** 2)
+        out[name] = {"weeks": int(sc["block"].nunique()), "vs_base": compare_weeks(sc, _model_col(cfg), "p_base"),
+                     "rows": rows}
+    return out
+
+
+def paired(a: pd.DataFrame, b: pd.DataFrame) -> dict:
+    """a against b on the stock-weeks both have (each: block, stock, loss): weekly average of a's loss
+    minus b's, judged with the ledger's compare. Negative gap = a better."""
+    from ledger import compare
+    m = a.merge(b, on=["block", "stock"], suffixes=("_a", "_b"))
+    wk = m.groupby("block")[["loss_a", "loss_b"]].mean()
+    r = compare(list(wk["loss_a"]), list(wk["loss_b"]))
+    r["shared_rows"] = int(len(m))
+    return r
+
+
+TUNING_DIMENSIONS = {
+    "week_stat": [{"week_stat": w} for w in ("mean", "trimmed", "mix2", "mix3")] + [{"tuesday_only": True}],
+    "min_trades": [{"min_trades": 1}, {"min_trades": 10}],
+    "skew": [{"skew_col": "skew_closest"}],
+    "change": [{"wobble": True}],
+    "rel_week_direction": [{"rel_dir": -1}],
+    "inputs": [{"inputs": tuple(k for k in INPUTS if k != drop)} for drop in INPUTS],
+    "weights": [{"weights": "L"}],
+}
+
+
+def _vs_v1(cand: dict, v1: dict) -> dict:
+    """Candidate against v1 in each fold, week by week (negative gap = candidate better)."""
+    return {f: paired(cand[f]["rows"], v1[f]["rows"]) for f in v1}
+
+
+def tune(db) -> dict:
+    cache: dict = {}
+    log = []
+    v1 = fold_scores(ranked(db, V1, cache), V1)
+    log.append({"name": "v1", "cfg": V1, "folds": {k: v["vs_base"] for k, v in v1.items()}})
+    best_per_dim = {}
+    for dim, changes in TUNING_DIMENSIONS.items():
+        winners = []
+        for ch in changes:
+            cfg = {**V1, **ch}
+            sc = fold_scores(ranked(db, cfg, cache), cfg)
+            vs = _vs_v1(sc, v1)
+            both = all(v["gap"] < 0 for v in vs.values())
+            avg_gap = sum(v["gap"] for v in vs.values()) / len(vs)
+            log.append({"name": f"{dim}: {ch}", "cfg": cfg, "folds": {k: v["vs_base"] for k, v in sc.items()},
+                        "vs_v1": vs, "beats_v1_both_folds": both})
+            if both:
+                winners.append((avg_gap, ch))
+        if winners:
+            best_per_dim[dim] = min(winners, key=lambda w: w[0])[1]
+    v2 = dict(V1)
+    for ch in best_per_dim.values():
+        v2.update(ch)
+    combined = None
+    if best_per_dim:
+        sc = fold_scores(ranked(db, v2, cache), v2)
+        vs = _vs_v1(sc, v1)
+        combined = {"cfg": v2, "folds": {k: v["vs_base"] for k, v in sc.items()}, "vs_v1": vs,
+                    "beats_v1_both_folds": all(v["gap"] < 0 for v in vs.values())}
+        if not combined["beats_v1_both_folds"]:
+            # The changes don't add up; keep only the single change with the best average gain.
+            best = min(((e["vs_v1"], e["cfg"]) for e in log if e.get("beats_v1_both_folds")),
+                       key=lambda x: sum(v["gap"] for v in x[0].values()))
+            v2 = best[1]
+    out = {"note": "Tuning on 2024-25 only (two folds). The 2026 test period was not read.",
+           "tried": len(log) - 1, "log": log, "adopted": best_per_dim, "combined": combined,
+           "v2": v2 if v2 != V1 else None}
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    (RESULTS_DIR / f"tuning-{date.today().isoformat()}.json").write_text(json.dumps(out, indent=2, default=str))
+    return out
+
+
+def verdict(rep: dict, col: str) -> str:
     vs = rep["vs"]
-
-    def passes(m):
-        a, b = vs[f"{m} vs p_base"], vs[f"{m} vs p_price"]
-        lower = a["gap"] < 0 and b["gap"] < 0
-        clear = a["verdict"] == "better" and b["verdict"] == "better"
-        return "clear pass" if clear else "lean pass" if lower else "fail"
-    e, l = passes("p_E"), passes("p_L")
-    if e == "fail" and l == "fail":
-        live = None
-    elif l != "fail" and (e == "fail" or vs["p_L vs p_E"]["verdict"] == "better"):
-        live = "L"
-    else:
-        live = "E"
-    return {"E": e, "L": l, "goes_live": live}
+    a, b = vs[f"{col} vs p_base"], vs[f"{col} vs p_price"]
+    if a["verdict"] == "better" and b["verdict"] == "better":
+        return "clear pass"
+    return "lean pass" if (a["gap"] < 0 and b["gap"] < 0) else "fail"
 
 
-def backtest_final(db) -> dict:
+def _git_state():
     import subprocess
     commit = subprocess.run(["git", "-C", str(PROJECT_DIR), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
     dirty = subprocess.run(["git", "-C", str(PROJECT_DIR), "status", "--porcelain", "collectors/stock_direction.py",
                             "docs/stock-direction/PLAN.md"], capture_output=True, text=True).stdout.strip()
+    return commit, dirty
+
+
+def run_on_test(db, cfg: dict, cache: dict) -> tuple[pd.DataFrame, dict, dict]:
+    p = ranked(db, cfg, cache)
+    build, test = split(p)
+    models = fit(build, cfg["inputs"])
+    test = predict(models, test)
+    return test, report(test, "test"), _models_summary(models)
+
+
+def backtest_final(db) -> dict:
+    """The one run on the sealed test period: v1 (E and L, as planned) and v2 from the tuning file."""
+    commit, dirty = _git_state()
     if dirty:
         raise SystemExit("commit the code and plan first: the final run records the commit it ran from")
-    p = add_ranks(build_panel(db))
-    build, test = split(p)
-    models = fit(build)
-    test = predict(models, test)
-    rep = report(test, "test")
-    out = {"model": MODEL, "version": VERSION, "commit": commit, "run_at": datetime.now(ET).isoformat(timespec="seconds"),
-           "fitted_on_building": _models_summary(models), "building_weeks": int(build["block"].nunique()),
-           "test": rep, "verdict": verdict(rep), "robustness": {}}
-    variants = {"min_trades_1": dict(min_trades=1), "min_trades_10": dict(min_trades=10),
-                "skew_closest_options": dict(skew_col="skew_closest"), "tuesday_only": dict(tuesday_only=True),
-                "week_mean_not_median": dict(week_stat="mean")}
-    for name, kw in list(variants.items()) + [("change_vs_own_wobble", None)]:
-        pp = add_ranks(build_panel(db), wobble=True) if kw is None else add_ranks(build_panel(db, **kw))
-        b, t = split(pp)
-        mm = fit(b)
-        t = predict(mm, t)
-        out["robustness"][name] = {"weeks": int(t["block"].nunique()), "brier_E": float(((t["p_E"] - t["y"]) ** 2).mean()),
-                                   "brier_base": float(((t["p_base"] - t["y"]) ** 2).mean()),
-                                   "E_vs_base": compare_weeks(t, "p_E", "p_base")}
+    tuning = sorted(RESULTS_DIR.glob("tuning-*.json"))
+    v2 = json.loads(tuning[-1].read_text()).get("v2") if tuning else None
+    if v2:
+        v2["inputs"] = tuple(v2["inputs"])
+    cache: dict = {}
+    test1, rep1, fit1 = run_on_test(db, V1, cache)
+    e, l = verdict(rep1, "p_E"), verdict(rep1, "p_L")
+    out = {"model": MODEL, "commit": commit, "run_at": datetime.now(ET).isoformat(timespec="seconds"),
+           "v1": {"cfg": V1, "fitted_on_building": fit1, "test": rep1, "verdict": {"E": e, "L": l}}}
+    # v1's planned choice between E and L
+    if e == "fail" and l == "fail":
+        v1_live = None
+    elif l != "fail" and (e == "fail" or rep1["vs"]["p_L vs p_E"]["verdict"] == "better"):
+        v1_live = "L"
+    else:
+        v1_live = "E"
+    out["v1"]["goes_live"] = v1_live
+    to_log = [("1", test1, "p_E"), ("1-learned", test1, "p_L")]
+    if v2:
+        test2, rep2, fit2 = run_on_test(db, v2, cache)
+        col = _model_col(v2)
+        out["v2"] = {"cfg": v2, "fitted_on_building": fit2, "test": rep2, "verdict": verdict(rep2, col)}
+        v1col = {"E": "p_E", "L": "p_L"}.get(v1_live or "E")
+        out["v2"]["vs_v1"] = paired(test2[["block", "stock"]].assign(loss=(test2[col] - test2["y"]) ** 2),
+                                    test1[["block", "stock"]].assign(loss=(test1[v1col] - test1["y"]) ** 2))
+        to_log.append(("2", test2, col))
+    out["robustness_v1"] = {}
+    variants = {"min_trades_1": {"min_trades": 1}, "min_trades_10": {"min_trades": 10},
+                "skew_closest_options": {"skew_col": "skew_closest"}, "tuesday_only": {"tuesday_only": True},
+                "week_mean_not_median": {"week_stat": "mean"}, "change_vs_own_wobble": {"wobble": True}}
+    for name, ch in variants.items():
+        t, rep, _ = run_on_test(db, {**V1, **ch}, cache)
+        out["robustness_v1"][name] = {"weeks": rep["weeks"], "brier_E": rep["brier"]["p_E"],
+                                      "brier_base": rep["brier"]["p_base"], "E_vs_base": rep["vs"]["p_E vs p_base"]}
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     path = RESULTS_DIR / f"final-{date.today().isoformat()}.json"
     path.write_text(json.dumps(out, indent=2, default=str))
     out["saved_to"] = str(path)
-    log_backtest(db, test)
+    out["ledger_rows"] = log_backtest(db, to_log)
     return out
 
 
-def log_backtest(db, test: pd.DataFrame) -> int:
-    """Test-period predictions into the ledger as a backtest (E as version 1, L as 1-learned)."""
+def log_backtest(db, runs: list[tuple[str, pd.DataFrame, str]]) -> int:
+    """Test-period predictions into the ledger as backtests: (version, predictions, column) each."""
     import ledger
     ledger.ensure(db)
     n = 0
-    for version, col in ((VERSION, "p_E"), (VERSION + "-learned", "p_L")):
+    for version, test, col in runs:
         ledger.clear_backtest(db, MODEL, version)
         for r in test.itertuples():
             made = datetime.combine(r.pred_day, dtime(18, 0), ET)
@@ -614,8 +779,8 @@ def log_backtest(db, test: pd.DataFrame) -> int:
                              forecast={"p": round(float(getattr(r, col)), 4)},
                              baselines={"base_rate": {"p": round(float(r.p_base), 4)},
                                         "price_only": {"p": round(float(r.p_price), 4)}},
-                             inputs={"gap": r.gap, "skew": r.skew, "dcvol": r.dcvol, "dpvol": r.dpvol,
-                                     "rel_week": r.rel_week, "excess": r.excess})
+                             inputs={k: (None if pd.isna(getattr(r, k)) else round(float(getattr(r, k)), 6))
+                                     for k in ("gap", "skew", "dcvol", "dpvol", "rel_week", "excess")})
             if pid:
                 ledger.resolve(db, pid, int(r.y), source="stock_bars_split_adj + dividends (total return vs SPY)")
                 n += 1
@@ -642,6 +807,12 @@ def main() -> int:
         print(detail)
     elif cmd == "explore":
         print(json.dumps(explore(db), indent=2, default=str))
+    elif cmd == "tune":
+        out = tune(db)
+        print(json.dumps({k: v for k, v in out.items() if k != "log"}, indent=2, default=str))
+        for e in out["log"]:
+            g = {f: round(v["gap"] * 1e4, 2) for f, v in e["folds"].items()}
+            print(f"{e['name'][:60]:60} vs base (x1e-4): {g}  beats v1 both folds: {e.get('beats_v1_both_folds', '-')}")
     elif cmd == "backtest" and "--final" in args:
         print(json.dumps(backtest_final(db), indent=2, default=str))
     else:
