@@ -1,6 +1,6 @@
 #!/bin/zsh
 # Installs (or reinstalls) the collectors and the dashboard server as background jobs on this Mac.
-# Re-run after editing a collector, shared/watchlist.json, shared/strategy.json, shared/release_dates.json, shared/news_feeds.json, shared/source_ratings.json
+# Re-run after editing a collector, shared/watchlist.json, shared/sp100.json, shared/stock_direction_live.json, shared/strategy.json, shared/release_dates.json, shared/news_feeds.json, shared/source_ratings.json
 # or anything in politics/:
 # launchd runs collector copies in ~/MarketData/app, and the political game machine runs from
 # ~/MarketData/politics, next to its data (which this never touches). (The dashboard server and shared/pairs.json are used in place, so edits to
@@ -22,6 +22,8 @@
 #   shipping    every day 09:40 and 19:40   ships through the 28 chokepoints (IMF PortWatch)
 #   spxmove     Mon-Fri 16:50, 18:20, 20:50, plus 08:05   S&P 500 move-size model: S&P and VIX history, Fed/CPI/jobs
 #               calendar, resolve yesterday's prediction, predict the next trading day (later runs only retry)
+#   direction   Mon-Fri 18:40   stock direction model: resolve last week's predictions; on a week's last trading
+#               day (normally Tuesday) download the 100 S&P 100 stocks' options and predict next week
 #   dashboard   always on (restarts if it stops)   http://127.0.0.1:8765
 #
 # Uninstall: ./install.sh uninstall
@@ -32,7 +34,7 @@ PROJECT=${HERE:h}
 DATA=~/MarketData
 AGENTS=~/Library/LaunchAgents
 PREFIX=com.marketdashboard.options
-JOBS=(daily bars snapshot backup positioning spreads events watchdog briefing strategy politics spxmove news shipping dashboard)
+JOBS=(daily bars snapshot backup positioning spreads events watchdog briefing strategy politics spxmove direction news shipping dashboard)
 
 for job in $JOBS; do
   launchctl bootout gui/$UID/$PREFIX.$job 2>/dev/null || true
@@ -46,8 +48,9 @@ $DATA/.venv/bin/python -c "import truststore, yfinance, bs4, lxml" 2>/dev/null |
 cp $HERE/options_collector.py $HERE/positioning_collector.py $HERE/backfill_alpaca.py $HERE/restore_backup.py \
    $HERE/spreads_collector.py $HERE/events_collector.py $HERE/watchdog.py $HERE/briefing.py \
    $HERE/scoring.py $HERE/strategy_collector.py $HERE/politics_job.py $HERE/ledger.py $HERE/spx_move.py \
-   $HERE/news_collector.py $HERE/shipping_collector.py $DATA/app/
-cp $HERE/../shared/watchlist.json $HERE/../shared/strategy.json $HERE/../shared/release_dates.json $HERE/../shared/news_feeds.json $HERE/../shared/source_ratings.json $DATA/app/
+   $HERE/news_collector.py $HERE/shipping_collector.py $HERE/stock_direction.py $DATA/app/
+cp $HERE/../shared/watchlist.json $HERE/../shared/strategy.json $HERE/../shared/release_dates.json $HERE/../shared/news_feeds.json $HERE/../shared/source_ratings.json \
+   $HERE/../shared/sp100.json $HERE/../shared/stock_direction_live.json $DATA/app/
 mkdir -p $DATA/politics/data $DATA/politics/outputs $DATA/politics/kalshi
 cp $PROJECT/politics/*.py $PROJECT/politics/*.json $PROJECT/politics/*.csv $PROJECT/politics/game_engine.js $DATA/politics/
 
@@ -72,6 +75,7 @@ schedules = {  # job -> (script path, arguments, launchd calendar entries or Non
                  weekdays(*[(h, m) for h in range(9, 17) for m in range(0, 60, 5) if (9, 25) <= (h, m) <= (16, 30)])),
     "politics": (f"{data}/app/politics_job.py", [], [{"Minute": 25}]),
     "spxmove": (f"{data}/app/spx_move.py", [], weekdays((8, 5), (16, 50), (18, 20), (20, 50))),
+    "direction": (f"{data}/app/stock_direction.py", ["live"], weekdays((18, 40))),
     "news": (f"{data}/app/news_collector.py", [], [{"Minute": m} for m in (2, 17, 32, 47)]),
     "shipping": (f"{data}/app/shipping_collector.py", [], [{"Hour": 9, "Minute": 40}, {"Hour": 19, "Minute": 40}]),
     "dashboard": (f"{project}/dashboard/server.py", [], None),

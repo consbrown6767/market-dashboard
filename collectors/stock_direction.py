@@ -10,6 +10,7 @@ Usage (python stock_direction.py ...):
   tune            building period only: try the planned variants, learn 2024/score 2025 and back
   backtest --final   the one run on the test period (v1, and v2 from tuning); logs it to the ledger
   live            weekday evenings: resolve due predictions; on a week's last trading day, predict next week
+  live --dry-run [YYYY-MM-DD]   show what it would predict for that day; downloads and logs nothing
 """
 
 from __future__ import annotations
@@ -848,21 +849,55 @@ def resolve_due(db) -> int:
     return n
 
 
-def job_live(db) -> tuple[str, int, str]:
-    """Weekday evenings: resolve last week's predictions once their window has closed; on the last
-    trading day of a Wednesday-Tuesday week, refresh the data and predict next week."""
+def live_versions() -> list[dict]:
+    """Versions that run live, from shared/stock_direction_live.json: [{"version": ..., "cfg": {...}}]."""
+    if not LIVE_PATH.exists():
+        return []
+    out = []
+    for v in json.loads(LIVE_PATH.read_text())["versions"]:
+        cfg = {**V1, **v["cfg"]}
+        cfg["inputs"] = tuple(cfg["inputs"])
+        out.append({"version": v["version"], "cfg": cfg})
+    return out
+
+
+def predictions_for(db, cfg: dict, day: date, future: list[date]) -> pd.DataFrame:
+    """Next week's probabilities for every stock with all inputs, made from data through `day`,
+    with the model fitted on the building period only (frozen, as tested)."""
+    p = ranked(db, cfg, future_days=future, keep_unresolved=True)
+    build, _ = split(p.dropna(subset=["y"]))
+    models = fit(build, cfg["inputs"])
+    rows = p[pd.to_datetime(p["pred_day"]).dt.date == day]
+    return predict(models, rows) if len(rows) else rows
+
+
+def job_live(db, as_of: date | None = None, dry: bool = False) -> tuple[str, int, str]:
+    """Weekday evenings: resolve predictions whose window has closed; on the last trading day of a
+    Wednesday-Tuesday week, refresh the data and predict next week for each live version.
+    dry: work out the predictions for `as_of` (a past day is fine) and print them; nothing is
+    downloaded or logged."""
     import ledger
     ledger.ensure(db)
-    if not LIVE_PATH.exists():
+    versions = live_versions()
+    if not versions:
         return "ok", 0, "no live version chosen yet"
-    live = json.loads(LIVE_PATH.read_text())
-    cfg = {**V1, **live["cfg"], "inputs": tuple(live["cfg"]["inputs"])}
     keys = load_keys()
-    today = datetime.now(ET).date()
+    today = as_of or datetime.now(ET).date()
     cal = _calendar(keys, today - timedelta(days=10), today + timedelta(days=30))
-    is_trading = today in cal
     nxt = next((d for d in cal if d > today), None)
-    predict_today = is_trading and nxt is not None and _block(nxt) != _block(today)
+    predict_today = today in cal and nxt is not None and _block(nxt) != _block(today)
+    if dry:
+        if not predict_today:
+            return "ok", 0, f"{today} is not the last trading day of a week"
+        future = [d for d in cal if d > today]
+        lines = []
+        for v in versions:
+            pr = predictions_for(db, v["cfg"], today, future)
+            col = _model_col(v["cfg"])
+            lines.append(f"version {v['version']}: {len(pr)} stocks, window {pr['start'].iloc[0]} to {pr['end'].iloc[0]}, "
+                         f"p from {pr[col].min():.3f} to {pr[col].max():.3f}; top 3: "
+                         + ", ".join(f"{r.stock} {getattr(r, col):.3f}" for r in pr.nlargest(3, col).itertuples()))
+        return "ok", 0, " | ".join(lines)
     u = sp100()
     symbols = list(u["stocks"])
     etfs = sorted(set(u["sector_etf"].values()) | {"SPY"})
@@ -874,29 +909,31 @@ def job_live(db) -> tuple[str, int, str]:
         return "ok", n_resolved, f"resolved {n_resolved}; not the last trading day of the week" + (f"; {notes}" if notes else "")
     job_data(db)
     job_iv(db, symbols, since=(today - timedelta(days=50)).isoformat())
-    p = ranked(db, cfg, future_days=[d for d in cal if d > today], keep_unresolved=True)
-    hist = p.dropna(subset=["y"])
-    build, _ = split(hist)
-    models = fit(build, cfg["inputs"])
-    now_rows = p[pd.to_datetime(p["pred_day"]).dt.date == today]
-    if now_rows.empty:
-        return "partial", n_resolved, f"no stock had every input for the week ending {today}" + (f"; {notes}" if notes else "")
-    now_rows = predict(models, now_rows)
-    col = _model_col(cfg)
-    logged = 0
-    for r in now_rows.itertuples():
-        pid = ledger.log(db, model=MODEL, version=live["version"], mode="live",
-                         target=f"{r.stock} beats SPY, close {r.start} to close {r.end}", kind="probability",
-                         opens_at=datetime.combine(r.start, dtime(16, 0), ET),
-                         resolves_at=datetime.combine(r.end, dtime(16, 0), ET),
-                         forecast={"p": round(float(getattr(r, col)), 4)},
-                         baselines={"base_rate": {"p": round(float(r.p_base), 4)},
-                                    "price_only": {"p": round(float(r.p_price), 4)}},
-                         inputs={k: (None if pd.isna(getattr(r, k)) else round(float(getattr(r, k)), 6))
-                                 for k in ("gap", "skew", "dcvol", "dpvol", "rel_week")})
-        logged += pid is not None
-    detail = f"predicted {logged} stocks for {now_rows['start'].iloc[0]} to {now_rows['end'].iloc[0]}; resolved {n_resolved}"
-    return ("ok" if not notes else "partial"), logged, detail + (f"; {notes[:1000]}" if notes else "")
+    future = [d for d in cal if d > today]
+    logged, details = 0, []
+    for v in versions:
+        pr = predictions_for(db, v["cfg"], today, future)
+        if pr.empty:
+            details.append(f"v{v['version']}: no stock had every input")
+            continue
+        col = _model_col(v["cfg"])
+        n = 0
+        for r in pr.itertuples():
+            pid = ledger.log(db, model=MODEL, version=v["version"], mode="live",
+                             target=f"{r.stock} beats SPY, close {r.start} to close {r.end}", kind="probability",
+                             opens_at=datetime.combine(r.start, dtime(16, 0), ET),
+                             resolves_at=datetime.combine(r.end, dtime(16, 0), ET),
+                             forecast={"p": round(float(getattr(r, col)), 4)},
+                             baselines={"base_rate": {"p": round(float(r.p_base), 4)},
+                                        "price_only": {"p": round(float(r.p_price), 4)}},
+                             inputs={k: (None if pd.isna(getattr(r, k)) else round(float(getattr(r, k)), 6))
+                                     for k in ("gap", "skew", "dcvol", "dpvol", "rel_week")})
+            n += pid is not None
+        logged += n
+        details.append(f"v{v['version']}: {n} stocks, {pr['start'].iloc[0]} to {pr['end'].iloc[0]}")
+    detail = "predicted " + "; ".join(details) + f"; resolved {n_resolved}"
+    status = "ok" if logged and not notes else "partial"
+    return status, logged, detail + (f"; {notes[:1000]}" if notes else "")
 
 
 # ---------------------------------------------------------------- command line
@@ -917,6 +954,9 @@ def main() -> int:
         status, n, detail = job_iv(db, syms)
         finish_run(db, run, status, n, detail)
         print(detail)
+    elif cmd == "live" and "--dry-run" in args:
+        as_of = next((date.fromisoformat(a) for a in args[1:] if a[:2] == "20"), None)
+        print(job_live(db, as_of=as_of, dry=True)[2])
     elif cmd == "live":
         run = start_run(db, "direction")
         try:

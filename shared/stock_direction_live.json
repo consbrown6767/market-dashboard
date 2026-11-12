@@ -1,0 +1,9 @@
+{
+  "note": "Versions of the stock direction model that log live predictions (see docs/stock-direction/README.md). Edit only with a new version number.",
+  "versions": [
+    {"version": "1-learned", "cfg": {"weights": "L"},
+     "why": "v1 with learned weights: the only version with a lower 2026 test score than both baselines (a lean pass, within noise). Goes live under the plan's rule."},
+    {"version": "3-skew", "cfg": {"inputs": ["skew"]},
+     "why": "Crash protection alone (Xing, Zhang & Zhao's signal). Chosen after the test results, so only its live record counts."}
+  ]
+}

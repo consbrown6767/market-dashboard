@@ -43,6 +43,11 @@ Fed calendar), Events (Polymarket), Status.
   change is a new version (v2), and only with the owner's OK. Its data: `index_daily` (SPX, VIX family),
   `econ_calendar` (Fed from federalreserve.gov; CPI/jobs from `shared/release_dates.json`, because BLS
   blocks scripts: refresh that file yearly in a browser, never by faking a browser user agent).
+- Stock direction model (second ledger model, live from 2026-11-17): `collectors/stock_direction.py` (job
+  `direction`, Tue evening predicts, other evenings resolve), plan fixed before results
+  `docs/stock-direction/PLAN.md`, results `docs/stock-direction/README.md`. Universe `shared/sp100.json`;
+  live versions `shared/stock_direction_live.json` (a new or changed version gets a new number; the 2026
+  test has been seen, so new versions are judged live only). Result: nothing reliably beats the base rate.
 - Failure alerts: `collectors/watchdog.py` (every 30 min) pushes to the owner's iPhone via ntfy; channel
   name in `~/.config/market-dashboard/alert.env`. Don't print or copy it. No email: owner declined. `collectors/briefing.py` sends the
   10:00 daily update on the same channel (contents chosen by the owner; see README before changing). New jobs need no watchdog change:

@@ -6,8 +6,9 @@
   // Models the ledger knows by name. A planned model shows as a placeholder until its first prediction.
   const MODELS = {
     "spx-move": { name: "S&P 500 move size", what: "How big tomorrow's S&P 500 move will be (a range, not a direction)", planned: true },
+    "stock-direction": { name: "Stock direction", what: "Each week, the chance each S&P 100 stock beats SPY over the next week (from options prices and last week's move)", planned: true },
   };
-  const BASELINE_NAMES = { recent: "Recent moves", vix: "VIX implied move", wide: "Wide range" };
+  const BASELINE_NAMES = { recent: "Recent moves", vix: "VIX implied move", wide: "Wide range", base_rate: "Base rate (how often stocks beat SPY)", price_only: "Last week's move only" };
   const VERDICTS = { better: ["fresh", "Beats it"], worse: ["down", "Worse"], "no clear difference": ["stale", "No clear difference"], "too few": ["", "Too few to judge"] };
   const state = { recentMode: "all" };
 

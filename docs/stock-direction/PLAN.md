@@ -200,4 +200,8 @@ The owner asked for the models to be compared, changed on what's seen, and teste
 
 ## Changes after results
 
-(none yet)
+- 2026-11-11, results in `README.md`. Under the rules above: v1 learned weights = lean pass and goes
+  live (version `1-learned`); v1 equal weights and v2 failed.
+- 2026-11-11, **version `3-skew`** (crash protection alone) also logs live. It was chosen *after*
+  seeing the 2026 results (the only input pointing the right way in both periods), so the 2026 test
+  doesn't count for it; only its live record does.

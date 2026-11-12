@@ -1,14 +1,14 @@
 # Market Dashboard: the complete reference
 
-*Last updated 2026-11-10 (late evening: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
-the three prediction models, the political game machine, how it all runs, and the rules agreed along
+*Last updated 2026-11-11 (late night: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
+the four prediction models, the political game machine, how it all runs, and the rules agreed along
 the way. Numbers are as of the evening of Monday 2026-11-09 unless a date says otherwise.*
 
 Kept up to date: any change to something described here is written into this file in the same piece
 of work (the rule is in `CLAUDE.md`). Fast-moving numbers (row counts, odds, results) are snapshots
 from the date above; the dashboard always has the live ones. The detailed documents remain the source
 of truth for their parts: `README.md` (how it runs), `CLAUDE.md` (short notes and rules),
-`docs/spx-move/README.md` (S&P model), `docs/gamma-strategy/` (breakout tracker), `politics/HANDOFF.md`
+`docs/spx-move/README.md` (S&P model), `docs/stock-direction/` (stock direction model: `PLAN.md` fixed before results, `README.md` results), `docs/gamma-strategy/` (breakout tracker), `politics/HANDOFF.md`
 and `politics/PLAN.md` (political machine).
 
 ---
@@ -27,12 +27,13 @@ with real records, whether any of these ideas know something the market doesn't.
 | Piece | State |
 |---|---|
 | Data collection | Running since 2026-10-26. 747 recorded job runs: 744 ok, 1 failed, 1 partial, 1 stopped |
-| Database | 3.7 GB at `~/MarketData/options.db`. 195 GB free on the Mac |
+| Database | 6.4 GB at `~/MarketData/options.db` on 2026-11-11 (was 3.7 GB; +2.3 GB of S&P 100 options history). 189 GB free on the Mac |
 | Watchlist | 72 symbols (stocks, sector and industry ETFs, bonds, commodities, global, crypto) |
 | S&P 500 move-size model | Built and backtested today. First live prediction logged at 8:50 pm for Tue 2026-11-10 (a CPI day): 90% range −2.19% to +1.97%, 50% range −0.64% to +0.94%. Tamper check ok |
 | Gamma breakout tracker | Live forward test started today. Day 1: three breakout attempts, no predictions (volume too low or failed hold) |
 | Political game machine | Rebuilds hourly. 509 forecasts logged (all on 2026-11-05), none resolved yet. Candidate ratings re-set from research on 11-10 (unreviewed) |
 | Scorecard / prediction ledger | Built today. Holds 3,151 backtest rows for the S&P model; live rows start tonight |
+| Stock direction model (added 2026-11-11) | Weekly chance each S&P 100 stock beats SPY, from options prices. Backtested on 2024-25, tuned (16 variants), sealed test on 2026: **no version reliably beats the base rate**; crash protection was the only input pointing the right way in both periods. Two versions log live every Tuesday from 2026-11-17 (`1-learned`, `3-skew`). 12,276 backtest rows in the ledger |
 | Alerts and daily update | Phone push via ntfy: problems every 30 min, a morning update at 10:00 |
 | News and shipping (added 2026-11-10) | Headlines from 83 sources every 15 min, grouped into stories, searchable; ships through 28 chokepoints daily, history from 2019. First run: 83 of 83 feeds answered, about 3,000 headlines from the last 3 days. News tab built |
 
@@ -56,7 +57,7 @@ dashboard/server.py  (read-only JSON API)  ◄──── reads outputs/data.js
         ▼
 dashboard/static/  (the page: tabs and panels)
 
-Models: spx_move.py, strategy_collector.py + scoring.py, politics/ ─► their own records
+Models: spx_move.py, stock_direction.py, strategy_collector.py + scoring.py, politics/ ─► their own records
         └─ new models log to the prediction ledger (ledger.py) ─► Scorecard tab
 ```
 
@@ -101,7 +102,7 @@ and no NVDA/AMD bars are stored for the Spreads tab. It may have been removed wi
 
 ### The jobs (all times Eastern, Mac local time)
 
-Fourteen launchd agents, all named `com.marketdashboard.options.*`, created by `collectors/install.sh`.
+Sixteen launchd agents, all named `com.marketdashboard.options.*`, created by `collectors/install.sh`.
 
 | Job | When | Does |
 |---|---|---|
@@ -112,6 +113,7 @@ Fourteen launchd agents, all named `com.marketdashboard.options.*`, created by `
 | `spreads` | 09:40, hourly 10:05–15:05, 16:30, Mon–Fri | Adjusted daily bars for every pair leg; full reload Saturdays |
 | `strategy` | Every 5 min, 09:25–16:30, Mon–Fri | Gamma breakout tracker |
 | `spxmove` | 16:50, 18:20, 20:50 and 08:05, Mon–Fri | S&P move-size model: refresh data, resolve yesterday, predict tomorrow (only once) |
+| `direction` | 18:40 Mon–Fri | Stock direction model: resolve predictions whose week has closed; on a week's last trading day (normally Tuesday), download the 100 S&P 100 stocks' options (10-15 min), recompute implied volatility, predict next week (`stock_direction.py live`) |
 | `events` | Hourly at :05, every day | Polymarket events |
 | `politics` | Hourly at :25, every day (past prices at 02:25) | Political machine: prices, headlines, rebuild |
 | `news` | Every 15 min (:02, :17, :32, :47), every day | Headlines from ~80 sources, grouped into stories (`news_collector.py`) |
@@ -162,6 +164,8 @@ Pages refresh every minute. The server only listens on this Mac.
 | **SqueezeMetrics** | S&P 500 dealer gamma (GEX) and dark-pool index (DIX), daily from May 2011 | A day's figure is computed after that day's close (2026-11-09's appeared at 6:04 pm) |
 | **CFTC** | Weekly futures positioning by trader group (dealers, asset managers, hedge funds, others, small traders) | Positions as of Tuesday, published Friday |
 | **Federal Reserve** | FOMC meeting dates, 2002 to next year | Scheduled meetings only |
+| **FRED** (St. Louis Fed) | 3-month T-bill rate (`DTB3`), for option pricing | Drops requests carrying our own user-agent name; answers Python's standard one (not a browser's) |
+| **Alpaca corporate actions** | Cash dividends and splits | Dividend amounts as paid at the time (not split-adjusted) |
 | **BLS** | CPI and jobs-report dates | Blocks scripts, so dates were read in a browser into `shared/release_dates.json`. Refresh yearly by hand |
 | **Polymarket** | Prices for every active event with real trading, all topics (about 560 in this evening's pull, 870 on 2026-10-26) | Thin markets filtered out (events need $5K of 24-hour volume or $25K of liquidity) |
 | **Kalshi** | 2028 political markets (own collector in the political machine) | Long-dated prices rarely go below about 8% |
@@ -200,9 +204,12 @@ from 2026-10-26. It can never be recovered for earlier dates.
 
 | Table | Rows | Covers | What it is |
 |---|---|---|---|
-| `option_bars_daily` | 10,181,871 | 2024-02-01 → 2026-11-05, 72 underlyings | Daily trade bars per option contract (no bid/ask, IV, greeks or OI). The Alpaca backfill |
-| `stock_bars_daily` | 52,800 | 2023-12-18 → today | Raw (not split-adjusted) daily stock bars, so they line up with strikes of the time. Kept current by the `bars` job since 2026-11-10 |
-| `stock_splits` | 31 | 2016 → today | Every split for the watchlist, from Alpaca's corporate actions feed; refreshed by the daily job |
+| `option_bars_daily` | 21,563,589 (2026-11-11) | 2024-02-01 → today, 159 underlyings (watchlist + S&P 100) | Daily trade bars per option contract (no bid/ask, IV, greeks or OI). The Alpaca backfill; the S&P 100 stocks added 2026-11-11 and kept current weekly by the `direction` job |
+| `stock_bars_daily` | 115,228 (2026-11-11) | 2023-12-18 → today, 159 symbols | Raw (not split-adjusted) daily stock bars, so they line up with strikes of the time. Watchlist kept current by the `bars` job, the S&P 100 stocks by the `direction` job |
+| `stock_splits` | 47 | 2016 → today | Every split for the watchlist and anything in `stock_bars_daily`, from Alpaca's corporate actions feed; refreshed by the daily job |
+| `dividends` | 1,208 | 2023-11 → announced | Cash dividends (ex-date, amount as paid at the time) for the S&P 100, sector ETFs and SPY, from Alpaca. Used for total returns and option pricing |
+| `rates_daily` | 734 | 2023-12 → today | 3-month T-bill (FRED `DTB3`) |
+| `direction_iv_daily` | 204,458 | 2024-02-01 → today, 100 stocks | Implied-volatility measures per stock and day (call-vs-put gap, crash protection, at-the-money call and put volatility), for three minimum-trade rules. Computed by `stock_direction.py iv` from the two tables above |
 | `stock_bars_split_adj` (view) | | | `stock_bars_daily` in today's share terms. Use it for any price series across a split (returns, drawdowns, volatility); use the raw table to match strikes |
 | `daily_bars_adj` | 16,374 | 2016 → today, 6 symbols | Split- and dividend-adjusted bars for the Spreads tab |
 | `market_gamma` | 3,904 | 2011-05-02 → 2026-11-06 | SqueezeMetrics GEX and DIX |
@@ -220,7 +227,7 @@ from 2026-10-26. It can never be recovered for earlier dates.
 | `strategy_grades` | 69 | Each event checked at the close, next close, and three closes later |
 | `strategy_state` | 14 | Each stock's live state (holding, volume ratio) |
 | `strategy_bars_5m` | 63,960 | 5-minute bars since 2026-09-14 (for the volume baseline). Not backed up |
-| `predictions` / `prediction_outcomes` | 3,151 / 3,151 | The prediction ledger (S&P model backtest so far) |
+| `predictions` / `prediction_outcomes` | 15,430 / 15,429 (2026-11-11) | The prediction ledger: S&P model backtest and live, stock direction backtest (versions 1, 1-learned, 2) |
 
 Small housekeeping tables: `alpaca_contracts` (one day only, then dropped as stale), `backfill_progress`.
 
@@ -659,7 +666,46 @@ Before the re-set (11-09), raw had Ossoff at 43% for the nomination and 33% for 
 
 ---
 
-## 11. Alerts and the morning update
+## 11. Model 4: the stock direction model (S&P 100, weekly)
+
+*Code `collectors/stock_direction.py`, tests `collectors/test_stock_direction.py`, plan (fixed before
+any result) `docs/stock-direction/PLAN.md`, results `docs/stock-direction/README.md`.*
+
+### What it does
+Every Tuesday evening, for each S&P 100 stock (about 90 a week with enough options trading): the chance
+it beats SPY, total return, from Wednesday's close to the next Wednesday's close. One probability each,
+Brier-scored in the ledger against the base rate (49.5%, how often stocks beat SPY in 2024-25) and
+against "last week's move only".
+
+### Inputs (each from a published paper; weekly values from the 5 days Tuesday to Tuesday)
+| Input | Points to "beats SPY" when | Source |
+|---|---|---|
+| Call-vs-put implied volatility gap | calls pricier | Cremers & Weinbaum (2010) |
+| Crash protection (out-of-the-money put minus at-the-money call volatility) | protection cheap | Xing, Zhang & Zhao (2010) |
+| Change in at-the-money call and put volatility over 4 weeks | calls up, puts down | An, Ang, Bali & Cakici (2014) |
+| Last week's return minus its sector ETF's | it beat its sector | Medhat & Schmeling (2022) |
+
+Implied volatility is computed here from Alpaca's daily option trade prices (no quotes): average traded
+prices, dividends taken out, T-bill rate, binomial early-exercise premium for puts.
+
+### Results (2026-11-11)
+- 2024-25 building period (95 weeks): nothing beats the base rate, even fitted on the answer key.
+- Tuning (16 variants incl. the owner's weekly mean/median mixes, learned on one year and scored on
+  the other): only "last week reverses" beat the base rate in both years, by a hair. Every average
+  beat the median, within noise.
+- Sealed 2026 test (45 weeks, 4,092 predictions, run once): v1 equal weights fail (= base rate); v1
+  learned weights a lean pass (gap −2.6 ± 2.8 Brier points × 10,000); v2 (reversal) fail.
+- Inputs alone, 2024-25 / 2026: crash protection +0.021 / +0.032 (right way both times, not proven);
+  gap and change wrong way both times; last week bounced back slightly both times.
+
+### Live (from Tuesday 2026-11-17; `shared/stock_direction_live.json`)
+- `1-learned`: v1 learned weights, live under the plan's lean-pass rule. Its edge mostly bets against
+  the change signal, with no research reason, so probably luck.
+- `3-skew`: crash protection alone, chosen after the 2026 results; only its live record counts.
+
+---
+
+## 12. Alerts and the morning update
 
 Both go to your iPhone through **ntfy** (free, no account, no access to email or Apple ID). The channel
 name is the only secret, so alerts carry no personal details. Email was considered and dropped: you
@@ -686,7 +732,7 @@ alert; the next check reports the missed runs.
 
 ---
 
-## 12. Rules and decisions that stand
+## 13. Rules and decisions that stand
 
 **Safety and privacy**
 - Never print the Alpaca keys or the ntfy channel name, or put them in this folder.
@@ -721,7 +767,7 @@ more data; short-interest data (no free daily source).
 
 ---
 
-## 13. Open items and what's next
+## 14. Open items and what's next
 
 - **Cboe's VIX timing:** on 2026-11-09 Cboe posted the day's VIX at 9:29 pm, after the last evening
   run (8:50 pm), so the first live prediction used Yahoo's VIX (flagged in its inputs; it matched Cboe's
@@ -730,7 +776,8 @@ more data; short-interest data (no free daily source).
   used. A run at about 9:45 pm would let Cboe's be used.
 - **Politics-to-sectors tracker: set aside** (your call, 2026-11-10). 2028 is far off and prices aren't
   reacting to it much yet. Elections do move sectors, so it's worth coming back to closer to 2028.
-- **Implied volatility history** computed from the backfill (`option_bars_daily` + `stock_bars_daily`). Use raw prices against strikes, but `stock_bars_split_adj` for the stock's own volatility (15 symbols split inside the stored history, e.g. NVDA, AVGO, XLK, ITA, MTUM).
+- **Implied volatility history:** done for the 100 S&P 100 stocks (`direction_iv_daily`, 2026-11-11); not yet for the watchlist ETFs. Use raw prices against strikes, but `stock_bars_split_adj` for the stock's own volatility.
+- **Stock direction model:** watch the two live versions on the Scorecard (verdicts after a few weeks; a small real edge would take a year). Unbuilt ideas: crash protection on the S&P 500 (more stocks, more power), held a month instead of a week, option-implied borrowing cost. BNY's options before its 2025 ticker change are missing.
 - **News ↔ markets (next step of the News build, agreed 2026-11-10):** each story with the moves in
   stocks, oil, VIX and related Polymarket odds in the hour after it, and each big move with the
   headlines from the hour before. Shows what moved together, not cause and effect.
@@ -747,7 +794,7 @@ more data; short-interest data (no free daily source).
 
 ---
 
-## 14. Commands
+## 15. Commands
 
 Use `~/MarketData/.venv/bin/python` as Python.
 
@@ -762,7 +809,8 @@ Use `~/MarketData/.venv/bin/python` as Python.
 | Preview the morning update | `.../app/briefing.py dry` (`FORCE=1` for the trading-day version after hours) |
 | S&P model: run / backtest / compare methods | `spx_move.py` / `spx_move.py backtest` / `spx_move.py research` (from `collectors/`) |
 | Gamma tracker replay of past days | `strategy_collector.py replay` |
-| Collector tests | `cd collectors && ~/MarketData/.venv/bin/python -m unittest test_spx_move test_ledger test_scoring test_strategy_collector` |
+| Stock direction model (from `collectors/`) | `stock_direction.py live --dry-run 2026-11-10` (what it would predict, logs nothing) / `explore` / `tune` / `iv SYMBOL` |
+| Collector tests | `cd collectors && ~/MarketData/.venv/bin/python -m unittest test_spx_move test_ledger test_scoring test_strategy_collector test_stock_direction` |
 | Political machine (from `~/MarketData/politics`) | `run_all.py` (rebuild), `run_all.py --log` (log forecasts), `turns.py add --headline "..." --multiplier id=1.2`, `turns.py list`, `forecasts.py questions`, `forecasts.py verify`, `calibrate.py`, `python -m unittest` |
 | Restore from backup | `restore_backup.py ~/MarketData/options.db`, then `install.sh`, then `backfill_alpaca.py` |
 | News: read every source now / reload shipping history | `.../app/news_collector.py all` / `.../app/shipping_collector.py backfill` |
@@ -770,7 +818,7 @@ Use `~/MarketData/.venv/bin/python` as Python.
 
 ---
 
-## 15. Glossary (plain English)
+## 16. Glossary (plain English)
 
 | Term | Meaning |
 |---|---|

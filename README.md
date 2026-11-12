@@ -336,6 +336,29 @@ comparison of methods: `docs/spx-move/README.md`. Code `collectors/spx_move.py`,
 - **Health checks:** each run compares the last 10 Yahoo S&P closes with SqueezeMetrics' and reports a
   gap over 0.05%.
 
+### Stock direction model (since 2026-11-11)
+
+Each Tuesday evening, for each S&P 100 stock: the chance it beats SPY (total return) from Wednesday's
+close to the next Wednesday's close. Plan fixed before any result: `docs/stock-direction/PLAN.md`;
+results: `docs/stock-direction/README.md`. Code `collectors/stock_direction.py`, tests
+`test_stock_direction.py`.
+
+- **Inputs** (published research, weekly values from the 5 days Tuesday to Tuesday): call-vs-put implied
+  volatility gap, crash protection (out-of-the-money put minus at-the-money call volatility), the
+  4-week change in at-the-money call and put volatility, last week's return against its sector ETF.
+- **Data:** options history for the 100 stocks from Feb 2024 (added to `option_bars_daily` 2026-11-11 by
+  `backfill_alpaca.py`; ~2.3 GB, excluded from the backup like the rest of that table), dividends
+  (`dividends`, Alpaca), 3-month T-bill (`rates_daily`, FRED). Implied volatility per stock and day in
+  `direction_iv_daily`. List and sectors in `shared/sp100.json`.
+- **Result:** no version reliably beats the base rate (sealed 2026 test). Two versions log live from
+  2026-11-17 (`shared/stock_direction_live.json`): `1-learned` (lean pass under the plan's rule) and
+  `3-skew` (crash protection alone; chosen after the results, so judged live only).
+- **Job `direction`:** Mon–Fri 18:40. On the last trading day of a Wednesday–Tuesday week it downloads
+  the 100 stocks' recent options (10–15 min under the free request limit), recomputes the last 50 days
+  of implied volatility, and predicts; other days it refreshes prices and resolves closed weeks.
+- **Commands** (from `collectors/`): `stock_direction.py live --dry-run 2026-11-10` (logs nothing),
+  `explore`, `tune`, `iv SYMBOL`, `data`.
+
 ### Research scripts
 
 Run by hand with `~/MarketData/.venv/bin/python research/<script>.py`. They fetch what they need and
@@ -365,6 +388,11 @@ print a report; nothing is written to the database.
 
 `collectors/backfill_alpaca.py`, run once on 2026-10-26 (log: `~/MarketData/logs/backfill.log`): all 25
 symbols, 6,565,075 daily bars across 378,250 contracts, 2024-02-01 to 2026-10-26, no errors.
+On 2026-11-11 it was run for the 87 S&P 100 stocks not on the watchlist (log
+`~/MarketData/logs/backfill_sp100.log`: 10.9 million bars, 979,000 contracts, no errors, ~1½ hours under the
+free request limit; table now 21.6 million rows, 159 underlyings) and topped up for the 13 watchlist
+stocks in the S&P 100. Class shares trade options under a joined root (BRK.B → `BRKB`), which the script
+now accepts. The `direction` job keeps the S&P 100 stocks current each week.
 
 - `option_bars_daily`: daily open/high/low/close/volume/VWAP/trade count of actual trades, from
   Alpaca's indicative feed. Scope: the last expiration of each week, the 45 days before each
