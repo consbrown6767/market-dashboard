@@ -688,6 +688,8 @@ def top_minus_bottom(p: pd.DataFrame, col: str = "score") -> dict:
         q = g[col].rank(pct=True)
         return g.loc[q > 0.8, "excess"].mean() - g.loc[q <= 0.2, "excess"].mean()
     s = p.groupby("block").apply(one, include_groups=False).dropna()
+    if len(s) < 3 or not s.std(ddof=1) > 0:   # e.g. a yes/no signal: no clear top and bottom fifth
+        return {"mean_weekly": None, "t": None, "weeks": int(len(s))}
     return {"mean_weekly": float(s.mean()), "t": float(s.mean() / (s.std(ddof=1) / math.sqrt(len(s)))), "weeks": int(len(s))}
 
 
