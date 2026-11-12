@@ -9,6 +9,7 @@ Usage (python stock_direction.py ...):
   explore         building period only: each input's record and the learned weights (the answer key)
   tune            building period only: try the planned variants, learn 2024/score 2025 and back
   backtest --final   the one run on the test period (v1, and v2 from tuning); logs it to the ledger
+  live            weekday evenings: resolve due predictions; on a week's last trading day, predict next week
 """
 
 from __future__ import annotations
@@ -263,12 +264,13 @@ def daily_measures(opts: pd.DataFrame) -> list[dict]:
     return out
 
 
-def compute_iv(db, symbol: str, rates: pd.Series, divs: pd.DataFrame) -> int:
+def compute_iv(db, symbol: str, rates: pd.Series, divs: pd.DataFrame, since: str = "0000") -> int:
+    """Recompute one stock's daily measures from `since` (a date) on; earlier rows are left as they are."""
     q = f"""SELECT o.date, o.expiration, o.type, o.strike, o.vwap AS price, o.volume, o.trades, s.vwap AS stock
             FROM option_bars_daily o JOIN stock_bars_daily s ON s.symbol = o.underlying AND s.date = o.date
-            WHERE o.underlying = ? AND o.vwap > 0 AND o.trades >= 1 AND s.vwap > 0
+            WHERE o.underlying = ? AND o.date >= ? AND o.vwap > 0 AND o.trades >= 1 AND s.vwap > 0
               AND julianday(o.expiration) - julianday(o.date) BETWEEN {MIN_DTE} AND {MAX_DTE}"""
-    df = pd.read_sql(q, db, params=(symbol,))
+    df = pd.read_sql(q, db, params=(symbol, since))
     if df.empty:
         return 0
     df["moneyness"] = df["strike"] / df["stock"]
@@ -304,19 +306,19 @@ def compute_iv(db, symbol: str, rates: pd.Series, divs: pd.DataFrame) -> int:
             m = daily_measures(gg)
             rows.append((symbol, day, mt, float(gg["stock"].iloc[0]), m["gap"], m["gap_pairs"], m["skew"],
                          m["skew_puts"], m["cvol"], m["cvol_n"], m["pvol"], m["pvol_n"], m["skew_closest"], now))
-    db.execute("DELETE FROM direction_iv_daily WHERE underlying = ?", (symbol,))
+    db.execute("DELETE FROM direction_iv_daily WHERE underlying = ? AND date >= ?", (symbol, since))
     db.executemany("INSERT INTO direction_iv_daily VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
     db.commit()
     return len(rows)
 
 
-def job_iv(db, symbols: list[str]) -> tuple[str, int, str]:
+def job_iv(db, symbols: list[str], since: str = "0000") -> tuple[str, int, str]:
     rates = _rate_lookup(db)
     divs = pd.read_sql("SELECT symbol, ex_date, amount FROM dividends", db)
     total, failed = 0, []
     for s in symbols:
         try:
-            n = compute_iv(db, s, rates, divs)
+            n = compute_iv(db, s, rates, divs, since)
             total += n
             print(f"{s:6} {n:6} day rows", flush=True)
         except Exception as ex:
@@ -379,12 +381,17 @@ def week_value(g, how: str) -> pd.Series:
 
 
 def build_panel(db, min_trades: int = MIN_TRADES, tuesday_only: bool = False, skew_col: str = "skew",
-                week_stat: str = "median") -> pd.DataFrame:
-    """One row per (prediction week, stock): raw inputs, excess return over the outcome window, outcome."""
+                week_stat: str = "median", future_days: list[date] | None = None,
+                keep_unresolved: bool = False) -> pd.DataFrame:
+    """One row per (prediction week, stock): raw inputs, excess return over the outcome window, outcome.
+    Live use: future_days (from the exchange calendar) lets the current week get its window dates, and
+    keep_unresolved keeps rows whose outcome isn't known yet (y is then missing)."""
     u = sp100()
     stocks = list(u["stocks"])
     sector = {s: u["sector_etf"][g] for s, g in u["stocks"].items()}
     days = _trading_days(db)
+    if future_days:
+        days = sorted(set(days) | {d for d in future_days if d > days[-1]})
     blocks: dict[date, list[date]] = {}
     for d in days:
         blocks.setdefault(_block(d), []).append(d)
@@ -439,6 +446,9 @@ def build_panel(db, min_trades: int = MIN_TRADES, tuesday_only: bool = False, sk
                          "dpvol": dp.at[b, s] if s in dp else np.nan,
                          "rel_week": r_week, "excess": r_out - spy})
     p = pd.DataFrame(rows)
+    if keep_unresolved:
+        p["y"] = np.where(p["excess"].isna(), np.nan, (p["excess"] > 0).astype(float))
+        return p
     p = p.dropna(subset=["excess"])
     p["y"] = (p["excess"] > 0).astype(int)
     return p
@@ -477,12 +487,12 @@ def add_ranks(p: pd.DataFrame, wobble: bool = False, rel_dir: int = 1, inputs=IN
     return p[p["n_week"] >= 10]
 
 
-def ranked(db, cfg: dict, cache: dict | None = None) -> pd.DataFrame:
+def ranked(db, cfg: dict, cache: dict | None = None, **panel_kw) -> pd.DataFrame:
     key = tuple(cfg[k] for k in PANEL_KEYS)
     if cache is not None and key in cache:
         base = cache[key]
     else:
-        base = build_panel(db, **{k: cfg[k] for k in PANEL_KEYS})
+        base = build_panel(db, **{k: cfg[k] for k in PANEL_KEYS}, **panel_kw)
         if cache is not None:
             cache[key] = base
     return add_ranks(base, wobble=cfg["wobble"], rel_dir=cfg["rel_dir"], inputs=cfg["inputs"])
@@ -497,7 +507,7 @@ def split(p: pd.DataFrame):
 
 def _logit(X, y):
     from sklearn.linear_model import LogisticRegression
-    m = LogisticRegression(penalty=None, max_iter=1000)
+    m = LogisticRegression(C=np.inf, max_iter=1000)   # no penalty: a plain logistic fit
     m.fit(X, y)
     return m
 
@@ -787,6 +797,108 @@ def log_backtest(db, runs: list[tuple[str, pd.DataFrame, str]]) -> int:
     return n
 
 
+# ---------------------------------------------------------------- live
+
+LIVE_PATH = PROJECT_DIR / "shared" / "stock_direction_live.json"   # which version runs live; written when one passes
+
+
+def _calendar(keys, start: date, end: date) -> list[date]:
+    from options_collector import ALPACA_TRADE
+    cal = alpaca(ALPACA_TRADE, "/v2/calendar", keys, start=start.isoformat(), end=end.isoformat())
+    return [date.fromisoformat(c["date"]) for c in cal]
+
+
+def refresh_data(db, keys, symbols: list[str], options: bool) -> str:
+    """Stock bars for the 100 stocks (and sector ETFs), plus option bars when predicting."""
+    import backfill_alpaca as bf
+    db.executescript(bf.SCHEMA)
+    notes = []
+    for sym in symbols:
+        try:
+            if options:
+                bf.backfill_symbol(db, keys, sym, dry_run=False)   # also refreshes the stock's bars
+            else:
+                bf.stock_bars(db, keys, sym)
+        except Exception as ex:
+            notes.append(f"{sym}: {ex}")
+    return "; ".join(notes)
+
+
+def resolve_due(db) -> int:
+    import ledger
+    due = ledger.due(db, MODEL)
+    if not due:
+        return 0
+    u = sp100()
+    tri = _total_return_index(db, list(u["stocks"]) + ["SPY"])
+    tri.index = pd.to_datetime(tri.index).date
+    n = 0
+    for d in due:
+        stock = d["target"].split(" beats SPY")[0]
+        start = date.fromisoformat(d["opens_at"][:10])
+        end = date.fromisoformat(d["resolves_at"][:10])
+        try:
+            ex = tri.at[end, stock] / tri.at[start, stock] - tri.at[end, "SPY"] / tri.at[start, "SPY"]
+        except KeyError:
+            continue
+        if pd.isna(ex):
+            continue
+        ledger.resolve(db, d["id"], int(ex > 0), source="stock_bars_split_adj + dividends (total return vs SPY)")
+        n += 1
+    return n
+
+
+def job_live(db) -> tuple[str, int, str]:
+    """Weekday evenings: resolve last week's predictions once their window has closed; on the last
+    trading day of a Wednesday-Tuesday week, refresh the data and predict next week."""
+    import ledger
+    ledger.ensure(db)
+    if not LIVE_PATH.exists():
+        return "ok", 0, "no live version chosen yet"
+    live = json.loads(LIVE_PATH.read_text())
+    cfg = {**V1, **live["cfg"], "inputs": tuple(live["cfg"]["inputs"])}
+    keys = load_keys()
+    today = datetime.now(ET).date()
+    cal = _calendar(keys, today - timedelta(days=10), today + timedelta(days=30))
+    is_trading = today in cal
+    nxt = next((d for d in cal if d > today), None)
+    predict_today = is_trading and nxt is not None and _block(nxt) != _block(today)
+    u = sp100()
+    symbols = list(u["stocks"])
+    etfs = sorted(set(u["sector_etf"].values()) | {"SPY"})
+    notes = refresh_data(db, keys, symbols, options=predict_today)
+    if not predict_today:
+        refresh_data(db, keys, etfs, options=False)
+    n_resolved = resolve_due(db)
+    if not predict_today:
+        return "ok", n_resolved, f"resolved {n_resolved}; not the last trading day of the week" + (f"; {notes}" if notes else "")
+    job_data(db)
+    job_iv(db, symbols, since=(today - timedelta(days=50)).isoformat())
+    p = ranked(db, cfg, future_days=[d for d in cal if d > today], keep_unresolved=True)
+    hist = p.dropna(subset=["y"])
+    build, _ = split(hist)
+    models = fit(build, cfg["inputs"])
+    now_rows = p[pd.to_datetime(p["pred_day"]).dt.date == today]
+    if now_rows.empty:
+        return "partial", n_resolved, f"no stock had every input for the week ending {today}" + (f"; {notes}" if notes else "")
+    now_rows = predict(models, now_rows)
+    col = _model_col(cfg)
+    logged = 0
+    for r in now_rows.itertuples():
+        pid = ledger.log(db, model=MODEL, version=live["version"], mode="live",
+                         target=f"{r.stock} beats SPY, close {r.start} to close {r.end}", kind="probability",
+                         opens_at=datetime.combine(r.start, dtime(16, 0), ET),
+                         resolves_at=datetime.combine(r.end, dtime(16, 0), ET),
+                         forecast={"p": round(float(getattr(r, col)), 4)},
+                         baselines={"base_rate": {"p": round(float(r.p_base), 4)},
+                                    "price_only": {"p": round(float(r.p_price), 4)}},
+                         inputs={k: (None if pd.isna(getattr(r, k)) else round(float(getattr(r, k)), 6))
+                                 for k in ("gap", "skew", "dcvol", "dpvol", "rel_week")})
+        logged += pid is not None
+    detail = f"predicted {logged} stocks for {now_rows['start'].iloc[0]} to {now_rows['end'].iloc[0]}; resolved {n_resolved}"
+    return ("ok" if not notes else "partial"), logged, detail + (f"; {notes[:1000]}" if notes else "")
+
+
 # ---------------------------------------------------------------- command line
 
 def main() -> int:
@@ -803,6 +915,15 @@ def main() -> int:
         syms = [a.upper() for a in args[1:]] or list(sp100()["stocks"])
         run = start_run(db, "direction-iv")
         status, n, detail = job_iv(db, syms)
+        finish_run(db, run, status, n, detail)
+        print(detail)
+    elif cmd == "live":
+        run = start_run(db, "direction")
+        try:
+            status, n, detail = job_live(db)
+        except Exception as ex:
+            finish_run(db, run, "failed", 0, f"{type(ex).__name__}: {ex}")
+            raise
         finish_run(db, run, status, n, detail)
         print(detail)
     elif cmd == "explore":
