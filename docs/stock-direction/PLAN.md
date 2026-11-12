@@ -221,6 +221,32 @@ at. They give a fresh test of the same ideas, on different stocks over the same 
 - **What it can change:** if `3-skew` passes here, the live universe may grow to these stocks too (a new
   version number). If not, the live versions stay as they are and the write-up says so.
 
+## Stage 4: five more research-based signals (written 2026-11-12, before any of them was computed)
+
+The owner asked for more ideas with a chance of a real edge, tested on the S&P 100 while the 400
+download runs. The S&P 100's 2026 outcomes have been seen in aggregate, but these signals have never
+been computed, so testing them there is still a first look. Every new idea is another chance for luck,
+though, so the S&P 100 is only **discovery**; the 400 fresh stocks are the **confirmation**.
+
+| Signal | Exact definition (weekly, data through Tuesday's close) | Beats SPY when | Source |
+|---|---|---|---|
+| `os` option-to-stock volume | Option contracts traded in the week (our backfill's contracts) divided by shares traded | Low | Johnson & So (2012): low beat high by 0.34% a week |
+| `earn` earnings week | 1 if the stock reports inside the outcome window (after the close on window days Wed-Tue, or before the open Thu-Wed), else 0 | 1 | Frazzini & Lamont (2007); Barber, De George, Lehavy & Trueman (2013) |
+| `pead` post-earnings drift | Yahoo's EPS surprise (%) of the latest report made 2 to 60 trading days before the prediction (0 if none) | High | Bernard & Thomas (1989) |
+| `rvi` realized minus implied volatility | Annualized standard deviation of the last 21 daily returns minus the week's at-the-money implied volatility (average of call and put) | Low | Bali & Hovakimian (2009) |
+| `max` lottery | Largest one-day return in the last 21 trading days | Low | Bali, Cakici & Whitelaw (2011) |
+
+- **Data:** earnings dates and surprises from Yahoo Finance (`yfinance`, unofficial), stored in
+  `earnings_dates`. Weakness: past dates are the actual dates; most were announced weeks ahead, but not
+  all (a small look-ahead for `earn`). Option volume covers only the contracts our backfill keeps
+  (Friday expirations, near the money, 45 days), not all of them.
+- **Tested on the S&P 100:** each signal alone (equal-weight version with that one input), plus
+  `5-research` = skew plus all five, equal weights. Same fitting, two-year check, sealed-2026 run once,
+  same pass rules.
+- **Confirmed on the 400 fresh stocks (added to stage 3 now, before their data is in):** the same six
+  versions, fitted on their 2024-25, tested once on 2026. A signal counts as real only if it passes on
+  the 400. A pass on the S&P 100 alone is a hint at best (six tries).
+
 ## Changes after results
 
 - 2026-11-11, results in `README.md`. Under the rules above: v1 learned weights = lean pass and goes
