@@ -40,17 +40,22 @@ week?** One probability per stock per week, scored with the Brier score like the
 
 - Price: the option's VWAP that day, against the stock's VWAP that day (both day averages, so a late
   rally doesn't make a fake gap).
-- Model: American-style pricing (Bjerksund-Stensland 1993 approximation; the papers used OptionMetrics,
-  which uses a binomial tree for American options), with the stock price reduced by the present value
-  of cash dividends going ex before expiration, and the T-bill rate.
+- Model: the stock price reduced by the present value of cash dividends going ex before expiration,
+  and the T-bill rate. Calls: Black-Scholes (with dividends taken out, an American call is worth the
+  European one). Puts: Black-Scholes plus the early-exercise premium from a Cox-Ross-Rubinstein binomial
+  tree (what OptionMetrics, the papers' data, uses), worked out once on a grid and looked up. Tested
+  against a 2,000-step tree: within 0.1 volatility point.
 - Kept: options with at least **5 trades** that day, **10 to 60 days** to expiry (Xing, Zhang & Zhao),
-  and an implied volatility between 3% and 200% (extreme values dropped, as in the papers).
+  an implied volatility between 3% and 200% (extreme values dropped, as in the papers), and at least
+  **10% of the price as time value** (judgment: a deep in-the-money option worth little more than its
+  exercise value gives a volatility that's guesswork; in tests its error ran to several points).
 - Moneyness = strike / stock price.
 
 ## The four inputs
 
-All weekly values are the **average of the daily values over the week, Tuesday close to Tuesday close**
-(the 5 trading days ending Tuesday), as in Xing, Zhang & Zhao. A week needs at least 3 good days.
+All weekly values come from the daily values over the week, **Tuesday close to Tuesday close** (the 5
+trading days ending Tuesday), as in Xing, Zhang & Zhao. They averaged the days; we take the **median
+day** instead (see "Changes before results" below). A week needs at least 3 good days.
 
 | # | Input | Exact definition | Direction (fixed in advance) | Source of definition and direction |
 |---|---|---|---|---|
@@ -66,7 +71,7 @@ to say about a single week, added without a reason tied to this model.
 
 - Prediction made after Tuesday's close, from data through Tuesday.
 - Outcome window: **Wednesday close to the next Wednesday close** (one day skipped, as in Xing, Zhang &
-  Zhao, so option and stock closes don't overlap). Holidays: the last trading day on or before.
+  Zhao, so option and stock closes don't overlap). If Wednesday is a holiday, the next trading day.
 - Outcome = 1 if the stock's total return beat SPY's total return over that window, else 0.
 
 ## How a prediction is made
@@ -112,7 +117,7 @@ to say about a single week, added without a reason tied to this model.
 - Robustness, each run once: minimum trades 1 and 10 instead of 5; crash protection from the single
   options closest to 0.95 and 1.0 (Xing's main version) instead of volume-weighted; input 3 measured
   against each stock's own past 26 weekly changes (the owner's "normal wobble" idea); Tuesday only
-  instead of the week's average.
+  instead of the week's median; the week's average (Xing's way) instead of its median.
 
 ## Known weaknesses, stated in advance
 
@@ -148,6 +153,21 @@ to say about a single week, added without a reason tied to this model.
 - McLean & Pontiff (2016), JF: https://Www.Gwern.net/doc/economics/2016-mclean.pdf
 - Bjerksund & Stensland (1993), "Closed-form approximation of American options", Scandinavian
   Journal of Management 9.
+
+## Changes before results (no outcome had been looked at)
+
+- 2026-11-11, pricing: the Bjerksund-Stensland 1993 formula first planned for puts was tested against an
+  exact binomial tree and overstated in-the-money put volatility by 0.2-0.4 points, enough to bias the
+  call-vs-put gap. Replaced by the binomial tree's own early-exercise premium on a grid.
+- 2026-11-11, the 10% time-value rule (above), from the same tests.
+- 2026-11-11, weekly median instead of mean: on AAPL, the daily call-vs-put gap's day-to-day spread rose
+  from 0.6 points on calm days to 2.6-3.9 points on days with a 2-5% intraday range, because an option's
+  average price and the stock's average price then come from different moments. On 2025-04-09 (AAPL up
+  15% intraday) the gap read -13 points. The median of 5 days ignores one or two such days. This is a
+  weakness of our data (no quotes), not a choice in the research; the mean is kept as a robustness check.
+- 2026-11-11, windows: the outcome window starts at the first trading day after the prediction day and
+  ends at the first trading day after the next week's prediction day (normally Wednesday to Wednesday).
+  When a Wednesday is a holiday this moves to Thursday, so a day is always skipped after the inputs.
 
 ## Changes after results
 
