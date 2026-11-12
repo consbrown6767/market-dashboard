@@ -167,9 +167,13 @@ def load_keys() -> dict[str, str]:
 def http_get(url: str, headers: dict | None = None, attempts: int = 4) -> bytes:
     for i in range(attempts):
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "market-dashboard/1.0", **(headers or {})})
+            # Ask for compressed replies: Polymarket's /events requires it since 2026-11-12 (HTTP 406
+            # "gzip_required" otherwise). Servers that don't compress just reply plainly.
+            req = urllib.request.Request(url, headers={"User-Agent": "market-dashboard/1.0", "Accept-Encoding": "gzip",
+                                                       **(headers or {})})
             with urllib.request.urlopen(req, timeout=60) as r:
-                return r.read()
+                body = r.read()
+                return gzip.decompress(body) if r.headers.get("Content-Encoding", "").lower() == "gzip" else body
         except urllib.error.HTTPError as e:
             if e.code in (429, 500, 502, 503, 504) and i < attempts - 1:
                 time.sleep(5 * (i + 1))
