@@ -90,7 +90,8 @@ def contracts(keys, sym: str) -> dict[str, list[dict]]:
             b = call(ALPACA_TRADE, "/v2/options/contracts", keys, underlying_symbols=sym, status=status,
                      expiration_date_gte=START.isoformat(), expiration_date_lte=last, limit=10000, page_token=token)
             for c in b.get("option_contracts", []):
-                if c.get("root_symbol") == sym:
+                # standard root only; a class share like BRK.B trades options under BRKB
+                if c.get("root_symbol") in (sym, sym.replace(".", "")):
                     out.setdefault(c["expiration_date"], []).append(c)
             token = b.get("next_page_token")
             if not token:
