@@ -705,6 +705,10 @@ prices, dividends taken out, T-bill rate, binomial early-exercise premium for pu
   rate, −2.2 ± 3.1 vs last-week-only); its input score +0.028 / +0.035, right way again. v1 learned
   weights lean pass; v1 equal weights fail. Crash protection has now pointed the right way in all four
   looks: the best evidence in the project, still not proof.
+- Survivorship check (2026-11-12): counting the 400 only after they joined the S&P 500 halves crash
+  protection's 2024-25 score (+0.014) but leaves 2026 close (+0.028; still a lean pass). It slashes
+  paper returns: equal amounts in all stocks then match the real equal-weight fund (RSP). The money is
+  mostly in avoiding the priciest-protection fifth. S&P 100 return figures are too high (no past lists).
 - Five more published signals, S&P 100 then the 400: option-to-stock volume, earnings week, realized
   minus implied volatility: nothing. Post-earnings drift: worked in 2024-25 (t 2.3 and 2.6), faded in
   2026. Lottery stocks: the reverse of the paper all four times (recent big jumpers kept winning).

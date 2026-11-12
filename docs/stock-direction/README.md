@@ -178,6 +178,26 @@ has for any input. It is still a small effect: a 0.03 rank correlation, which mo
 only a couple of points away from the base rate (on the 400 for the week from 2026-11-11: 45.8% to 50.7%).
 Not proven, but no longer likely to be pure luck.
 
+### Check: today's members vs actual members (2026-11-12, after the owner questioned the returns)
+
+Using today's index members for the whole past counts stocks before they joined, often after soaring
+(AppLovin, Bloom Energy, and so on). Re-run with each stock counted only from its S&P 500 "date added"
+(Wikipedia), on the 400:
+
+| | as tested | members only |
+|---|---|---|
+| Crash protection score, 2024-25 | +0.028 (t 2.1) | +0.014 (t 1.1) |
+| Crash protection score, 2026 | +0.035 (t 1.6) | +0.028 (t 1.4, right in 62% of weeks) |
+| `3-skew` vs base rate / last-week-only, 2026 | −2.68 ± 2.75 / −2.24 ± 3.08 | −1.75 ± 1.56 / −1.37 ± 2.25 (still a lean pass) |
+
+Equal amounts in every stock, compounded weekly, members only: 2024-25 +20.7% (the real equal-weight
+fund RSP: +20.4%; S&P 500 +37.1%), 2026 +21.4% (RSP +17.6%; S&P 500 +12.3%). Cheapest-protection fifth
++25.1% and +22.1%; priciest fifth +6.8% and +8.4%. So the signal's money is mostly in **avoiding the
+priciest fifth**; the cheapest fifth was only slightly ahead of holding everything. The S&P 100 can't
+be fixed this way (it needs past top-100 lists, not free): its "equal amounts" returns ran 9-14
+points above the real equal-weight S&P 100 fund (EQWL), so treat its return figures as too high.
+Rank scores and Brier tests changed little on the 400; dollar-style returns changed a lot.
+
 ## Stage 4: five more research signals (2026-11-12)
 
 Picked from the research before any was computed (`PLAN.md`). Tested first on the S&P 100
@@ -227,7 +247,7 @@ the research says it should last, and its noise is the largest of all. Post-earn
 - No open interest history, so the papers' open-interest weights became volume weights.
 - About 2¾ years of options data. Only effects about as strong as the original papers' could have
   shown.
-- Today's S&P 100 and S&P 500 members are used for the whole past (survivorship).
+- Today's S&P 100 and S&P 500 members are used for the whole past (survivorship). For returns this matters a lot (see the check above); for the crash-protection ranking, little.
 - On the 400, only about a third of the stocks (the ones with busier options) get predictions in a
   given week, so "the 400" really means the more-traded part of it.
 - BNY's options before its 2025 ticker change aren't included. GEV and SNDK start when they were
