@@ -198,6 +198,29 @@ The owner asked for the models to be compared, changed on what's seen, and teste
 - **Going live** (owner's OK, 2026-11-11, as long as it costs nothing): the version that passes goes
   into the ledger as a live model with a weekly job. If none passes, nothing goes live.
 
+## Stage 3: a fresh test on stocks never looked at (written 2026-11-12, before their data was downloaded)
+
+The 2026 test on the S&P 100 has been seen, so it can't judge anything chosen afterwards (like
+crash protection alone). The other 400 S&P 500 stocks (`shared/sp500_ex100.json`, sectors from the
+same Wikipedia table, GOOG/FOX/NWS left out as second share classes) have 2026 results nobody has looked
+at. They give a fresh test of the same ideas, on different stocks over the same time.
+
+- **Data:** the same Alpaca backfill (Feb 2024 on) and the same implied-volatility code, unchanged.
+- **Versions tested, fixed now, exactly as they run on the S&P 100:**
+  - `1` (v1 equal weights);
+  - `1-learned` (v1 learned weights);
+  - `3-skew` (crash protection alone).
+  Nothing is tuned on these stocks.
+- **Fitting:** each version's curve and weights fitted on these 400 stocks' 2024-25 weeks; tested once on
+  their 2026 weeks. Same baselines, same scoring, same pass rules as above.
+- **The main question:** does `3-skew` pass (lower than both baselines) on these fresh stocks? A clear
+  pass would be real evidence. A lean pass is a hint. A fail means crash protection's S&P 100 showing
+  was probably luck.
+- **Also reported:** each input alone on these stocks (2024-25 and 2026), and the two-year check (learn
+  2024 / score 2025 and back) for each version.
+- **What it can change:** if `3-skew` passes here, the live universe may grow to these stocks too (a new
+  version number). If not, the live versions stay as they are and the write-up says so.
+
 ## Changes after results
 
 - 2026-11-11, results in `README.md`. Under the rules above: v1 learned weights = lean pass and goes
