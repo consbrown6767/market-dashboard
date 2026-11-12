@@ -3,7 +3,8 @@
 *Built 2026-11-11. Plan fixed before any result: `PLAN.md` (same folder, in git with its dates).
 Code: `collectors/stock_direction.py`, tests `collectors/test_stock_direction.py`. Scored in the
 prediction ledger and shown on the Scorecard tab. Live from Tuesday 2026-11-17 (first predictions for
-Wednesday 11-18 to Wednesday 11-25).*
+Wednesday 11-18 to Wednesday 11-25). Fresh test on the other 400 S&P 500 stocks and five more signals:
+2026-11-12.*
 
 ## In one paragraph
 
@@ -13,8 +14,11 @@ and how those prices just changed. It also uses last week's move against the sto
 **The honest result: no version reliably beats the simple base rate.** "Each stock has about a 49.5%
 chance" is as good as anything we built, in 2024-25 and in the sealed 2026 test. One input, the price
 of crash protection, pointed the right way in both periods but not strongly enough to rule out luck.
-Two versions log live predictions anyway, because it costs nothing and the live record is the only
-fair judge from here.
+The fresh test on the other 400 S&P 500 stocks (2026-11-12) backed that one input up: crash
+protection pointed the right way there too, in both periods, and alone it scored lower than both
+baselines in 2026 (still within noise). Of five more research signals, none clearly worked.
+Three versions log live predictions, because it costs nothing and the live record is the only fair
+judge from here.
 
 ## What it predicts, and when
 
@@ -117,11 +121,11 @@ v2 = the single best change (last week reverses). On the owner's question about 
 average-type measure beat the median in both years, the plain mean most. But the differences were
 under one unit of noise.
 
-## What went live (2026-11-11), and why
+## What went live, and why
 
-The owner's instruction was to put a version live if it passed and cost nothing. Two versions log
-predictions every Tuesday. No trading, and the job uses only free data (about 1.5 GB a year of
-options history on this Mac, not in the backup):
+The owner's instruction was to put a version live if it passed and cost nothing. Three versions log
+predictions every Tuesday. No trading, and the job uses only free data (options history for the S&P
+500, a few GB a year on this Mac, not in the backup):
 
 - **1-learned:** v1 with learned weights. It goes live because the plan's pre-set rule says a lean
   pass goes live. Expect it to look like the base rate.
@@ -131,8 +135,78 @@ options history on this Mac, not in the backup):
   (+2.45 / −0.16). Only its live record counts.
 
 Both are listed in `shared/stock_direction_live.json`. On the Scorecard they appear as
-"Stock direction" with their versions. With about 90 predictions a week, the ledger can give a
-verdict after a few weeks. A real edge this small, though, would take a year or more to show.
+"Stock direction" with their versions. - **3-skew@sp400** (live from 2026-11-12): crash protection alone on the 400 other S&P 500 stocks,
+  fitted on their 2024-25 weeks. It passed the pre-registered fresh test (lean pass), so by the stage 3
+  rule the live universe grows to these stocks. About 150 predictions a week. Together with `3-skew`
+  that's ~240 crash-protection predictions a week, which is the point: more predictions, sooner verdict.
+
+Not live, though they lean-passed on the 400: v1 learned weights on the 400 (it mostly re-bets the same
+crash-protection signal), post-earnings drift (failed on the S&P 100 in 2026, and live use would need
+weekly earnings data from an unofficial Yahoo feed), and the reversed lottery signal (runs against its
+research; looks like a 2024-26 fashion). Each could be switched on later as a new version.
+
+All three are listed in `shared/stock_direction_live.json`. On the Scorecard they appear as
+"Stock direction" with their versions. A real edge this small would take a year or more of live
+predictions to show clearly.
+
+## Stage 3: the fresh test on 400 other stocks (2026-11-12)
+
+The S&P 100's 2026 results had been seen, so crash protection alone couldn't be judged on them. The
+other 400 S&P 500 stocks' results had not. Same code, same versions, fitted on their 2024-25 weeks,
+tested once on 2026 (commit `0986c0f`, file `fresh-sp400-2026-11-12.json`). About 130 of the 400 have
+enough options trading each week (thinly traded options are left out by the same rules as before), so
+the test has 45 weeks and 5,951 predictions. 49.4% beat SPY.
+
+| Version | vs base rate | vs last-week-only | Two-year check (2025 / 2024) | Verdict |
+|---|---|---|---|---|
+| v1, equal weights | −0.13 ± 0.34 | +0.30 ± 1.28 | +0.18 / −0.07 | Fail |
+| v1, learned weights | −2.11 ± 3.25 | −1.67 ± 3.24 | +0.02 / −5.25 | Lean pass |
+| **Crash protection alone (`3-skew`)** | **−2.68 ± 2.75** | **−2.24 ± 3.08** | +0.64 / −2.81 | **Lean pass** |
+
+Each input alone on the 400 (2024-25 / 2026):
+
+| Input | 2024-25 | 2026 | Same as on the S&P 100? |
+|---|---|---|---|
+| Crash protection | **+0.028 (t 2.1)** | **+0.035 (t 1.6, right in 60% of weeks)** | Yes: right way again, a bit stronger |
+| Call-vs-put gap | −0.003 | 0.000 | Nothing |
+| Change in call/put prices | −0.005 | +0.011 | Nothing |
+| Last week against sector | −0.014 | −0.006 | Slight bounce-back again |
+
+**What it means:** crash protection has now pointed the right way in all four looks (two groups of
+stocks, two periods), and the fresh one was decided in advance. That is the best evidence this project
+has for any input. It is still a small effect: a 0.03 rank correlation, which moves each probability
+only a couple of points away from the base rate (on the 400 for the week from 2026-11-11: 45.8% to 50.7%).
+Not proven, but no longer likely to be pure luck.
+
+## Stage 4: five more research signals (2026-11-12)
+
+Picked from the research before any was computed (`PLAN.md`). Tested first on the S&P 100
+(discovery), then on the 400 (confirmation). Rank correlation with next week's result, oriented so
+positive = the paper's direction:
+
+| Signal | Paper | S&P 100: 2024-25 / 2026 | 400: 2024-25 / 2026 | Verdict |
+|---|---|---|---|---|
+| Option-to-stock volume (low wins) | Johnson & So 2012 | −0.025 / −0.008 | −0.010 / +0.007 | Nothing |
+| Earnings week (reporters win) | Frazzini & Lamont 2007 | −0.007 / −0.038 | −0.009 / 0.000 | Nothing; slightly the wrong way |
+| Post-earnings drift (beats keep winning) | Bernard & Thomas 1989 | **+0.033 (t 2.3)** / −0.006 | **+0.026 (t 2.6)** / +0.015 | Worked in 2024-25, faded in 2026 |
+| Realized minus implied volatility (low wins) | Bali & Hovakimian 2009 | −0.017 / −0.018 | +0.004 / +0.005 | Nothing |
+| Lottery stocks (big recent jumpers lose) | Bali, Cakici & Whitelaw 2011 | −0.042 / −0.034 | −0.034 / −0.021 | **Opposite**, all four times: big jumpers kept winning |
+
+As versions, scored against the base rate (2026 test):
+
+| Version | S&P 100 | 400 |
+|---|---|---|
+| Option-to-stock volume | +3.93 ± 5.88 | +0.76 ± 2.59 |
+| Earnings week | 0.00 ± 0.00 | −0.02 ± 0.22 |
+| Post-earnings drift | +3.21 ± 2.94 | −1.28 ± 1.86 (lean pass) |
+| Realized minus implied | −0.36 ± 1.26 | +0.37 ± 1.10 |
+| Lottery | −1.31 ± 6.93 (lean pass) | −0.74 ± 5.64 (lean pass) |
+| All six (crash protection plus the five) | +0.47 ± 2.21 | −0.26 ± 0.52 |
+
+The lottery version's passes come from its curve learning the **reverse** of the paper (bet on recent
+jumpers). That fits 2024-26, when the biggest movers (AI and chip stocks) kept running, but nothing in
+the research says it should last, and its noise is the largest of all. Post-earnings drift passed on the
+400 but failed on the S&P 100 in 2026. Neither goes live: see below.
 
 ## What we learned
 
@@ -142,7 +216,9 @@ verdict after a few weeks. A real edge this small, though, would take a year or 
   (Muravyev, Pearson & Pollet). Our stocks are cheap to borrow.
 - Last week's move bounced back slightly rather than continuing, against Medhat & Schmeling. Small,
   and in both periods.
-- Crash protection is the one thread worth following.
+- Crash protection is the one thread worth following, and the fresh 400 backed it up.
+- Of five more published signals, none held in 2026. Post-earnings drift was the strongest in
+  2024-25 and then faded. Recent big jumpers kept winning, the reverse of the lottery research.
 
 ## Limits
 
@@ -151,26 +227,31 @@ verdict after a few weeks. A real edge this small, though, would take a year or 
 - No open interest history, so the papers' open-interest weights became volume weights.
 - About 2¾ years of options data. Only effects about as strong as the original papers' could have
   shown.
-- Today's S&P 100 members are used for the whole past (survivorship).
+- Today's S&P 100 and S&P 500 members are used for the whole past (survivorship).
+- On the 400, only about a third of the stocks (the ones with busier options) get predictions in a
+  given week, so "the 400" really means the more-traded part of it.
 - BNY's options before its 2025 ticker change aren't included. GEV and SNDK start when they were
   listed.
 
 ## Upkeep
 
 - Job `direction`, weekdays 6:40 pm. On a week's last trading day (normally Tuesday) it downloads the
-  100 stocks' options (about 10-15 minutes, under the free-plan request limit), recomputes the last 50
-  days of implied volatility, and predicts. On other days it refreshes prices and resolves predictions
+  S&P 500 stocks' options (about an hour, under the free-plan request limit), recomputes the last 50
+  days of implied volatility, and predicts. Each live version names its stock list (`universe`, default
+  the S&P 100) in `shared/stock_direction_live.json`. On other days it refreshes prices and resolves predictions
   whose window has closed.
 - Commands, from `collectors/`:
   - `stock_direction.py live --dry-run 2026-11-10`: what it would predict that day; logs nothing.
   - `stock_direction.py iv [SYMBOLS]`: recompute implied volatility.
   - `stock_direction.py explore`: the answer-key look at 2024-25.
   - `stock_direction.py tune`: the tuning log.
+  - `stock_direction.py signals`: stage 4 on the S&P 100. `stock_direction.py --universe sp400 fresh`:
+    the stage 3/4 fresh test (already run once; rerunning it is no longer a fair test).
+  - `stock_direction.py earnings [SYMBOLS]`: refresh earnings dates from Yahoo.
 - The 2026 test can't be rerun as a fair test: it's been seen. Any new version is judged live.
 - S&P 100 membership changes: edit `shared/sp100.json`, run `backfill_alpaca.py NEWSYMBOL` and
   `stock_direction.py iv NEWSYMBOL`, then `install.sh`. That's a new version.
 - Ideas not built:
-  - Crash protection with more stocks (the S&P 500), for more statistical power.
   - Crash protection held for a month, not a week. Xing et al. found it lasts up to 6 months, and a
     longer hold suits its slow drift.
   - Option-implied borrowing cost (Muravyev, Pearson & Pollet).

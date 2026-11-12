@@ -45,9 +45,11 @@ Fed calendar), Events (Polymarket), Status.
   blocks scripts: refresh that file yearly in a browser, never by faking a browser user agent).
 - Stock direction model (second ledger model, live from 2026-11-17): `collectors/stock_direction.py` (job
   `direction`, Tue evening predicts, other evenings resolve), plan fixed before results
-  `docs/stock-direction/PLAN.md`, results `docs/stock-direction/README.md`. Universe `shared/sp100.json`;
-  live versions `shared/stock_direction_live.json` (a new or changed version gets a new number; the 2026
-  test has been seen, so new versions are judged live only). Result: nothing reliably beats the base rate.
+  `docs/stock-direction/PLAN.md`, results `docs/stock-direction/README.md`. Universes `shared/sp100.json`
+  and `shared/sp500_ex100.json` (the other 400, `--universe sp400`); live versions
+  `shared/stock_direction_live.json`, each naming its universe (a new or changed version gets a new number;
+  2026 has been seen on both lists, so new versions are judged live only). Result: nothing reliably beats
+  the base rate; crash protection alone is the one input that held up (also on the 400).
 - Failure alerts: `collectors/watchdog.py` (every 30 min) pushes to the owner's iPhone via ntfy; channel
   name in `~/.config/market-dashboard/alert.env`. Don't print or copy it. No email: owner declined. `collectors/briefing.py` sends the
   10:00 daily update on the same channel (contents chosen by the owner; see README before changing). New jobs need no watchdog change:

@@ -338,7 +338,7 @@ comparison of methods: `docs/spx-move/README.md`. Code `collectors/spx_move.py`,
 
 ### Stock direction model (since 2026-11-11)
 
-Each Tuesday evening, for each S&P 100 stock: the chance it beats SPY (total return) from Wednesday's
+Each Tuesday evening, for each S&P 100 stock (and, for one version, the other 400 S&P 500 stocks): the chance it beats SPY (total return) from Wednesday's
 close to the next Wednesday's close. Plan fixed before any result: `docs/stock-direction/PLAN.md`;
 results: `docs/stock-direction/README.md`. Code `collectors/stock_direction.py`, tests
 `test_stock_direction.py`.
@@ -346,18 +346,22 @@ results: `docs/stock-direction/README.md`. Code `collectors/stock_direction.py`,
 - **Inputs** (published research, weekly values from the 5 days Tuesday to Tuesday): call-vs-put implied
   volatility gap, crash protection (out-of-the-money put minus at-the-money call volatility), the
   4-week change in at-the-money call and put volatility, last week's return against its sector ETF.
-- **Data:** options history for the 100 stocks from Feb 2024 (added to `option_bars_daily` 2026-11-11 by
-  `backfill_alpaca.py`; ~2.3 GB, excluded from the backup like the rest of that table), dividends
-  (`dividends`, Alpaca), 3-month T-bill (`rates_daily`, FRED). Implied volatility per stock and day in
-  `direction_iv_daily`. List and sectors in `shared/sp100.json`.
-- **Result:** no version reliably beats the base rate (sealed 2026 test). Two versions log live from
-  2026-11-17 (`shared/stock_direction_live.json`): `1-learned` (lean pass under the plan's rule) and
-  `3-skew` (crash protection alone; chosen after the results, so judged live only).
+- **Data:** options history for the S&P 500 stocks from Feb 2024 (added to `option_bars_daily` by
+  `backfill_alpaca.py`: the 100 on 2026-11-11, the other 400 on 11-12; ~5.4 GB, excluded from the backup
+  like the rest of that table), dividends (`dividends`, Alpaca), 3-month T-bill (`rates_daily`, FRED),
+  earnings dates (`earnings_dates`, Yahoo; tests only). Implied volatility per stock and day in
+  `direction_iv_daily`. Lists and sectors in `shared/sp100.json` and `shared/sp500_ex100.json`.
+- **Result:** no version reliably beats the base rate (sealed 2026 test). On a fresh test of the other
+  400 (2026-11-12) crash protection alone lean-passed; five more research signals did nothing reliable.
+  Three versions log live from 2026-11-17 (`shared/stock_direction_live.json`): `1-learned` (lean pass
+  under the plan's rule), `3-skew` (crash protection alone; chosen after the results, so judged live
+  only) and `3-skew@sp400` (crash protection on the 400, passed the fresh test).
 - **Job `direction`:** Mon–Fri 18:40. On the last trading day of a Wednesday–Tuesday week it downloads
-  the 100 stocks' recent options (10–15 min under the free request limit), recomputes the last 50 days
+  the S&P 500 stocks' recent options (about an hour under the free request limit), recomputes the last 50 days
   of implied volatility, and predicts; other days it refreshes prices and resolves closed weeks.
 - **Commands** (from `collectors/`): `stock_direction.py live --dry-run 2026-11-10` (logs nothing),
-  `explore`, `tune`, `iv SYMBOL`, `data`.
+  `explore`, `tune`, `signals`, `iv SYMBOL`, `earnings SYMBOL`, `data`; `--universe sp400` before the
+  command for the other 400.
 
 ### Research scripts
 

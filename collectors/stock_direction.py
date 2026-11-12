@@ -34,8 +34,8 @@ from options_collector import (ALPACA_DATA, ET, PROJECT_DIR, alpaca, connect, fi
                                start_run)
 
 MODEL, VERSION = "stock-direction", "1"
-UNIVERSES = {"sp100": PROJECT_DIR / "shared" / "sp100.json",           # the live universe
-             "sp400": PROJECT_DIR / "shared" / "sp500_ex100.json"}     # stage 3: fresh stocks, test only
+UNIVERSES = {"sp100": PROJECT_DIR / "shared" / "sp100.json",           # live
+             "sp400": PROJECT_DIR / "shared" / "sp500_ex100.json"}     # stage 3 fresh test; live for 3-skew@sp400
 _universe = "sp100"
 RESULTS_DIR = Path.home() / "MarketData" / "stock_direction"
 
@@ -999,7 +999,7 @@ def _calendar(keys, start: date, end: date) -> list[date]:
 
 
 def refresh_data(db, keys, symbols: list[str], options: bool) -> str:
-    """Stock bars for the 100 stocks (and sector ETFs), plus option bars when predicting."""
+    """Stock bars for the given symbols, plus their option bars when `options` is set."""
     import backfill_alpaca as bf
     db.executescript(bf.SCHEMA)
     notes = []
@@ -1019,8 +1019,7 @@ def resolve_due(db) -> int:
     due = ledger.due(db, MODEL)
     if not due:
         return 0
-    u = sp100()
-    tri = _total_return_index(db, list(u["stocks"]) + ["SPY"])
+    tri = _total_return_index(db, sorted(set(all_stocks())) + ["SPY"])
     tri.index = pd.to_datetime(tri.index).date
     n = 0
     for d in due:
@@ -1039,14 +1038,18 @@ def resolve_due(db) -> int:
 
 
 def live_versions() -> list[dict]:
-    """Versions that run live, from shared/stock_direction_live.json: [{"version": ..., "cfg": {...}}]."""
+    """Versions that run live, from shared/stock_direction_live.json:
+    [{"version": ..., "cfg": {...}, "universe": "sp100" or "sp400"}]."""
     if not LIVE_PATH.exists():
         return []
     out = []
     for v in json.loads(LIVE_PATH.read_text())["versions"]:
         cfg = {**V1, **v["cfg"]}
         cfg["inputs"] = tuple(cfg["inputs"])
-        out.append({"version": v["version"], "cfg": cfg})
+        universe = v.get("universe", "sp100")
+        if universe not in UNIVERSES:
+            raise SystemExit(f"live version {v['version']}: unknown universe {universe}")
+        out.append({"version": v["version"], "cfg": cfg, "universe": universe})
     return out
 
 
@@ -1058,6 +1061,16 @@ def predictions_for(db, cfg: dict, day: date, future: list[date]) -> pd.DataFram
     models = fit(build, cfg["inputs"])
     rows = p[pd.to_datetime(p["pred_day"]).dt.date == day]
     return predict(models, rows) if len(rows) else rows
+
+
+def predictions_for_universe(db, v: dict, day: date, future: list[date]) -> pd.DataFrame:
+    """predictions_for on the version's own stock list (fitted on that list's building weeks, as in its backtest)."""
+    global _universe
+    saved, _universe = _universe, v["universe"]
+    try:
+        return predictions_for(db, v["cfg"], day, future)
+    finally:
+        _universe = saved
 
 
 def job_live(db, as_of: date | None = None, dry: bool = False) -> tuple[str, int, str]:
@@ -1081,18 +1094,21 @@ def job_live(db, as_of: date | None = None, dry: bool = False) -> tuple[str, int
         future = [d for d in cal if d > today]
         lines = []
         for v in versions:
-            pr = predictions_for(db, v["cfg"], today, future)
+            pr = predictions_for_universe(db, v, today, future)
             col = _model_col(v["cfg"])
             lines.append(f"version {v['version']}: {len(pr)} stocks, window {pr['start'].iloc[0]} to {pr['end'].iloc[0]}, "
                          f"p from {pr[col].min():.3f} to {pr[col].max():.3f}; top 3: "
                          + ", ".join(f"{r.stock} {getattr(r, col):.3f}" for r in pr.nlargest(3, col).itertuples()))
         return "ok", 0, " | ".join(lines)
-    u = sp100()
-    symbols = list(u["stocks"])
-    etfs = sorted(set(u["sector_etf"].values()) | {"SPY"})
+    symbols, etfs = [], {"SPY"}
+    for name in sorted({v["universe"] for v in versions}):
+        u = json.loads(UNIVERSES[name].read_text())
+        symbols += [s for s in u["stocks"] if s not in symbols]
+        etfs |= set(u["sector_etf"].values())
+    etfs = sorted(etfs)
     notes = refresh_data(db, keys, symbols, options=predict_today)
-    if not predict_today:
-        refresh_data(db, keys, etfs, options=False)
+    etf_notes = refresh_data(db, keys, etfs, options=False)       # sector ETFs and SPY: prices only, every day
+    notes = "; ".join(x for x in (notes, etf_notes) if x)
     n_resolved = resolve_due(db)
     if not predict_today:
         return "ok", n_resolved, f"resolved {n_resolved}; not the last trading day of the week" + (f"; {notes}" if notes else "")
@@ -1101,7 +1117,7 @@ def job_live(db, as_of: date | None = None, dry: bool = False) -> tuple[str, int
     future = [d for d in cal if d > today]
     logged, details = 0, []
     for v in versions:
-        pr = predictions_for(db, v["cfg"], today, future)
+        pr = predictions_for_universe(db, v, today, future)
         if pr.empty:
             details.append(f"v{v['version']}: no stock had every input")
             continue

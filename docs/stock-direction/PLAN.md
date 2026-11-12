@@ -254,3 +254,9 @@ though, so the S&P 100 is only **discovery**; the 400 fresh stocks are the **con
 - 2026-11-11, **version `3-skew`** (crash protection alone) also logs live. It was chosen *after*
   seeing the 2026 results (the only input pointing the right way in both periods), so the 2026 test
   doesn't count for it; only its live record does.
+- 2026-11-12, stages 3 and 4 run once on the 400 (commit `0986c0f`), results in `README.md`. Lean
+  passes on the 400: `3-skew`, `1-learned`, `4-pead`, `4-max`; the rest failed. By the stage 3 rule the
+  live universe grows: **version `3-skew@sp400`** (crash protection alone on the 400, fitted on their
+  2024-25 weeks) logs live from 2026-11-17. Not taken live, by judgment, stated here: `4-max` (its
+  pass comes from betting the reverse of the paper), `4-pead` (failed on the S&P 100 in 2026; live use
+  needs a weekly unofficial Yahoo feed), `1-learned@sp400` (mostly the same crash-protection bet).

@@ -6,7 +6,9 @@
   // Models the ledger knows by name. A planned model shows as a placeholder until its first prediction.
   const MODELS = {
     "spx-move": { name: "S&P 500 move size", what: "How big tomorrow's S&P 500 move will be (a range, not a direction)", planned: true },
-    "stock-direction": { name: "Stock direction", what: "Each week, the chance each S&P 100 stock beats SPY over the next week (from options prices and last week's move)", planned: true },
+    "stock-direction": { name: "Stock direction", what: "Each week, the chance each S&P 100 stock beats SPY over the next week (from options prices and last week's move)", planned: true,
+      // Versions ending "@sp400" cover the 400 other S&P 500 stocks.
+      whatFor: v => v.endsWith("@sp400") ? "Each week, the chance each of the other 400 S&P 500 stocks beats SPY over the next week (from options prices)" : null },
   };
   const BASELINE_NAMES = { recent: "Recent moves", vix: "VIX implied move", wide: "Wide range", base_rate: "Base rate (how often stocks beat SPY)", price_only: "Last week's move only" };
   const VERDICTS = { better: ["fresh", "Beats it"], worse: ["down", "Worse"], "no clear difference": ["stale", "No clear difference"], "too few": ["", "Too few to judge"] };
@@ -35,7 +37,7 @@
       const info = MODELS[m.model] || { name: m.model, what: "" };
       const bases = Object.entries(m.baselines);
       const first = `<td><b>${esc(info.name)}</b> <span class="dim">v${esc(m.version)}${m.mode === "backtest" ? " · backtest" : ""}</span></td>
-        <td class="wrap">${esc(info.what)}</td><td>${m.mode === "backtest" ? `<span class="dim">tested from<br>${day(m.first)}</span>` : day(m.first)}</td>
+        <td class="wrap">${esc((info.whatFor && info.whatFor(m.version)) || info.what)}</td><td>${m.mode === "backtest" ? `<span class="dim">tested from<br>${day(m.first)}</span>` : day(m.first)}</td>
         <td>${m.logged.toLocaleString("en-US")}</td><td>${m.resolved.toLocaleString("en-US")}</td>`;
       if (!bases.length) {
         rows.push(`<tr>${first}<td class="dim">–</td><td class="dim">–</td><td>${verdict("too few", m.resolved, d.min_resolved)}</td><td>${ledgerBadge(d, m.mode)}</td></tr>`);

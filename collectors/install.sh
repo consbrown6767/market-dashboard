@@ -23,7 +23,7 @@
 #   spxmove     Mon-Fri 16:50, 18:20, 20:50, plus 08:05   S&P 500 move-size model: S&P and VIX history, Fed/CPI/jobs
 #               calendar, resolve yesterday's prediction, predict the next trading day (later runs only retry)
 #   direction   Mon-Fri 18:40   stock direction model: resolve last week's predictions; on a week's last trading
-#               day (normally Tuesday) download the 100 S&P 100 stocks' options and predict next week
+#               day (normally Tuesday) download the S&P 500 stocks' options (~1 hour) and predict next week
 #   dashboard   always on (restarts if it stops)   http://127.0.0.1:8765
 #
 # Uninstall: ./install.sh uninstall

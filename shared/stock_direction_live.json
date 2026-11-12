@@ -4,6 +4,8 @@
     {"version": "1-learned", "cfg": {"weights": "L"},
      "why": "v1 with learned weights: the only version with a lower 2026 test score than both baselines (a lean pass, within noise). Goes live under the plan's rule."},
     {"version": "3-skew", "cfg": {"inputs": ["skew"]},
-     "why": "Crash protection alone (Xing, Zhang & Zhao's signal). Chosen after the test results, so only its live record counts."}
+     "why": "Crash protection alone (Xing, Zhang & Zhao's signal). Chosen after the test results, so only its live record counts."},
+    {"version": "3-skew@sp400", "universe": "sp400", "cfg": {"inputs": ["skew"]},
+     "why": "Crash protection alone on the 400 other S&P 500 stocks: lower than both baselines in the pre-registered fresh test (stage 3, 2026-11-12), a lean pass. Fitted on those stocks' 2024-25 weeks."}
   ]
 }
