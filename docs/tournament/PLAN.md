@@ -85,4 +85,8 @@ full and its after-publication period.
 
 ## Changes after results
 
-(none yet)
+- 2026-11-12, after the run: rule T4 tests a winner's *gap over SPY*. That is the wrong test for a
+  "safer, not better" winner, whose gap is negative by design. As information only (the verdict
+  stands as written), the README adds a block bootstrap of the Sharpe-ratio gap for the T2 winner
+  and for leveraged trend. It also adds stress tests of leveraged trend (extra day of delay,
+  higher costs, 1.5x and 3x, run on the S&P 500 itself).

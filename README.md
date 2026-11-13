@@ -390,6 +390,13 @@ members (`shared/sp500_history.json`, prices in `daily_bars_adj`); no profit 201
 `collectors/macro_timing.py` (`docs/macro-timing/`): Rapach-Strauss-Zhou combined macro forecast on
 Goyal's data (`gw_monthly`); worked to 2005, failed after.
 
+### Tournament of all strategies (2026-11-12, none live)
+
+`collectors/tournament.py`, plan and write-up in `docs/tournament/`. Round 4 (leveraged trend, dual
+momentum, four-factor mix, CBOE option strategies, trend-filtered near misses) and every strategy
+tested on 2026-11-12 ranked on 2006-2025 against SPY. None beats SPY by the rules; 10-month trend is
+the best risk-adjusted; leveraged trend made the most money. CBOE indices and `SP500TR` in `index_daily`.
+
 ### Research scripts
 
 Run by hand with `~/MarketData/.venv/bin/python research/<script>.py`. They fetch what they need and

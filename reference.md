@@ -1,6 +1,6 @@
 # Market Dashboard: the complete reference
 
-*Last updated 2026-11-12 (pairs trading and macro timing models tested: both failed; risk budget model, stocks + Treasuries by equal risk, tested 1965-2026: failed; nine classic published strategies tested on 100 years: none beats the market, 10-month trend is safer; volatility-managed market model tested on 100 years of data: failed, not live; stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
+*Last updated 2026-11-12 (round 4 and tournament of all 24 strategies: none beats SPY by the rules; 10-month trend safest, leveraged trend most money; pairs trading and macro timing models tested: both failed; risk budget model, stocks + Treasuries by equal risk, tested 1965-2026: failed; nine classic published strategies tested on 100 years: none beats the market, 10-month trend is safer; volatility-managed market model tested on 100 years of data: failed, not live; stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
 the four prediction models, the political game machine, how it all runs, and the rules agreed along
 the way. Numbers are as of the evening of Monday 2026-11-09 unless a date says otherwise.*
 
@@ -766,6 +766,16 @@ the time (Wikipedia edit history, `shared/sp500_history.json`), Alpaca adjusted 
 zero, stocks held 0-1.5x by the prediction. Worked 1947-2005 (14.1% a year vs 11.9%, accuracy
 p = 0.001); failed 2006-2025 (8.7% vs 11.1%, worse than the plain average; −67% in 2008). Not live.
 
+
+### The tournament (2026-11-12; `docs/tournament/`)
+Nine more strategies (leveraged trend, dual momentum, four-factor mix, two trend-filtered near misses,
+CBOE put-selling, covered calls, protective puts, collar), then all 24 strategies on 2006-01 to 2025-09
+against SPY (10.9% a year, Sharpe 0.65, worst drop −51%). By the pre-set rules **none beats SPY**.
+Best risk-adjusted: **10-month trend** (10.0% a year, Sharpe 0.79, worst drop −18%; its Sharpe edge
+within noise, its crash cuts consistent). Most money: **leveraged trend** (2x above the 200-day average:
+12.9% a year, $109k vs $77k; 98-year Sharpe edge beyond noise; failed since 2016 on Sharpe). CBOE
+index history and `SP500TR` are in `index_daily`. Not live.
+
 ---
 
 ## 12. Alerts and the morning update
@@ -877,6 +887,7 @@ Use `~/MarketData/.venv/bin/python` as Python.
 | Nine classic strategies (from `collectors/`) | `classic_strategies.py data` / `classic_strategies.py backtest` (needs `vol_managed.py data` first) |
 | Risk budget test (from `collectors/`) | `risk_budget.py data` / `bondcheck` / `backtest` (needs `vol_managed.py data` first) |
 | Pairs / macro tests (from `collectors/`) | `pairs_model.py members` / `prices` / `backtest`; `macro_timing.py data` / `backtest` |
+| Tournament (from `collectors/`) | `tournament.py data` / `tournament.py backtest` |
 | Collector tests | `cd collectors && ~/MarketData/.venv/bin/python -m unittest test_spx_move test_ledger test_scoring test_strategy_collector test_stock_direction` |
 | Political machine (from `~/MarketData/politics`) | `run_all.py` (rebuild), `run_all.py --log` (log forecasts), `turns.py add --headline "..." --multiplier id=1.2`, `turns.py list`, `forecasts.py questions`, `forecasts.py verify`, `calibrate.py`, `python -m unittest` |
 | Restore from backup | `restore_backup.py ~/MarketData/options.db`, then `install.sh`, then `backfill_alpaca.py` |
