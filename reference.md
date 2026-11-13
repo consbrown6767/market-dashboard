@@ -1,6 +1,6 @@
 # Market Dashboard: the complete reference
 
-*Last updated 2026-11-13 (math exploration: 15 versions of 8 methods, 2006-2026 held out; only the variance risk premium passed, weakly; live paper record started: leveraged trend, 10-month trend, pre-Fed drift; Fed calendar parser fixed and history reloaded; constant leverage tested: 2x more money but −98.7% in 1929-32, fails; monthly savers at 2x ahead in all 60 cohorts; Fed-day drift and Fed cycle tested: both faded after publication, Fed calendar gap found; earnings-week premium tested: failed; overnight-only investing and trend across many markets tested: both failed; round 4 and tournament of all 24 strategies: none beats SPY by the rules; 10-month trend safest, leveraged trend most money; pairs trading and macro timing models tested: both failed; risk budget model, stocks + Treasuries by equal risk, tested 1965-2026: failed; nine classic published strategies tested on 100 years: none beats the market, 10-month trend is safer; volatility-managed market model tested on 100 years of data: failed, not live; stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
+*Last updated 2026-11-13 (VRP confirmation: not confirmed, fails all three tests; math exploration: 15 versions of 8 methods, 2006-2026 held out; only the variance risk premium passed, weakly; live paper record started: leveraged trend, 10-month trend, pre-Fed drift; Fed calendar parser fixed and history reloaded; constant leverage tested: 2x more money but −98.7% in 1929-32, fails; monthly savers at 2x ahead in all 60 cohorts; Fed-day drift and Fed cycle tested: both faded after publication, Fed calendar gap found; earnings-week premium tested: failed; overnight-only investing and trend across many markets tested: both failed; round 4 and tournament of all 24 strategies: none beats SPY by the rules; 10-month trend safest, leveraged trend most money; pairs trading and macro timing models tested: both failed; risk budget model, stocks + Treasuries by equal risk, tested 1965-2026: failed; nine classic published strategies tested on 100 years: none beats the market, 10-month trend is safer; volatility-managed market model tested on 100 years of data: failed, not live; stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
 the four prediction models, the political game machine, how it all runs, and the rules agreed along
 the way. Numbers are as of the evening of Monday 2026-11-09 unless a date says otherwise.*
 
@@ -822,8 +822,10 @@ absorption ratio, turbulence, hidden Markov regimes, variance risk premium (VRP)
 Ledoit-Wolf minimum variance, boosted trees, variance-ratio trend. None cleared the luck test in the sandbox. The
 top three went to the vault once. Minimum variance failed twice. **VRP passed by the rule:** $127k vs SPY $89k,
 Sharpe 0.70 vs 0.66, worst drop −37% vs −51%. Its average weight was 0.99x, so it's timing, not leverage. But the
-edge is within luck, and since 2010 its Sharpe is 0.80 vs 0.90. Candidate for the live paper record (owner's OK
-needed). Not live.
+edge is within luck, and since 2010 its Sharpe is 0.80 vs 0.90. **Confirmation test (`VRP_CONFIRM_PLAN.md`,
+`vrp_confirm.py`): not confirmed.** In S&P declines other than 2008 it lost less in only 4 of 11 (it was often
+1.5x going in: 1998, 2020, 2022, 2025). Worse Sharpe than holding in all 4 fresh markets (Nasdaq, Dow, Russell, Europe).
+Better in 3 of 6 periods. Not live.
 
 ### Live paper record (from 2026-11-13; `docs/paper-record/`)
 Nothing traded. Three rules, version 1, fixed in `docs/paper-record/PLAN.md`: **leveraged trend** (SSO while SPY > its
@@ -948,6 +950,7 @@ Use `~/MarketData/.venv/bin/python` as Python.
 | Fed-drift test (from `collectors/`) | `fed_drift.py backtest` |
 | Leverage test (from `collectors/`) | `constant_leverage.py data` / `constant_leverage.py backtest` |
 | Math exploration (from `collectors/`) | `exploration.py explore` (sandbox only) / `exploration.py holdout` (needs committed `FINALISTS.md`) |
+| VRP confirmation (from `collectors/`) | `vrp_confirm.py data` / `vrp_confirm.py backtest` |
 | Paper record (from `~/MarketData/app/`) | `paper_record.py status` / `paper_record.py verify` |
 | Collector tests | `cd collectors && ~/MarketData/.venv/bin/python -m unittest test_spx_move test_ledger test_scoring test_strategy_collector test_stock_direction test_paper_record` |
 | Political machine (from `~/MarketData/politics`) | `run_all.py` (rebuild), `run_all.py --log` (log forecasts), `turns.py add --headline "..." --multiplier id=1.2`, `turns.py list`, `forecasts.py questions`, `forecasts.py verify`, `calibrate.py`, `python -m unittest` |

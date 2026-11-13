@@ -410,7 +410,8 @@ Each has a plan fixed before results and a write-up in `docs/<name>/`; no jobs, 
   SPY minute bars fetched live from Alpaca, not stored. Found: the Fed parser in `spx_move.py` skipped meetings
   written "April/May 30-1" (5 missing, 2013-2019); fixed 2026-11-13 and the history reloaded.
 - `collectors/exploration.py` (`docs/exploration/`): 15 versions of 8 math methods, sandbox 1946-2005, vault 2006-2026
-  opened once for three finalists; the vault won't load until `FINALISTS.md` is committed. Variance risk premium passed weakly.
+  opened once for three finalists; the vault won't load until `FINALISTS.md` is committed. Variance risk premium passed weakly, then failed
+  its confirmation (`collectors/vrp_confirm.py`: S&P declines, four fresh markets, time periods; new fear indexes in `index_daily`).
 - **Live paper record** (from 2026-11-13, not a test): `collectors/paper_record.py`, job `paper` (weekdays 09:10,
   16:40, 20:40), plan `docs/paper-record/PLAN.md`. Leveraged trend, 10-month trend and pre-Fed drift, each position
   written before it takes effect into `paper_positions` and scored daily against SPY in `paper_marks` (both

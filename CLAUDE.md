@@ -65,7 +65,7 @@ Fed calendar), Events (Polymarket), Status.
 - Fed-day drift and Fed cycle (tested 2026-11-13, both faded after publication): `collectors/fed_drift.py`,
   `docs/fed-drift/`. Found and fixed (2026-11-13, owner's OK): the Fed parser skipped meetings spanning two months.
 - Math exploration (2026-11-13): `collectors/exploration.py`, `docs/exploration/` (2006-2026 vault, opened once). Only the
-  variance risk premium passed, weakly; a candidate for the paper record if the owner agrees.
+  variance risk premium passed, weakly, then failed its confirmation (`collectors/vrp_confirm.py`): not live.
 - Live paper record (from 2026-11-13, owner's OK): `collectors/paper_record.py` (job `paper`, weekdays 09:10/16:40/20:40),
   plan `docs/paper-record/PLAN.md`; tables `paper_positions`/`paper_marks` (hash-chained: never edit) and `paper_skips`;
   Scorecard panel `sc-paper`. Leveraged trend, 10-month trend, pre-Fed drift vs SPY; a rule change is a new version.

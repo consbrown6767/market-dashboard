@@ -112,3 +112,74 @@ The weight mostly sat between the limits: 8% of months at 0, 20% at 1.5x, 71% in
 - Lo, A. & MacKinlay, A. C. (1988). Stock Market Prices Do Not Follow Random Walks. Review of Financial Studies 1(1).
 - Bailey, D. & López de Prado, M. (2014). The Deflated Sharpe Ratio. Journal of Portfolio Management 40(5).
 - Data: Kenneth French daily US market and 49 industries; Cboe VIX; S&P 500; Yahoo dividend-adjusted SPY.
+
+---
+
+# Confirmation of the options fear premium (2026-11-13): not confirmed
+
+*Plan fixed before any test: `VRP_CONFIRM_PLAN.md` (commit `17927a1`). Code: `collectors/vrp_confirm.py`.
+Results: `~/MarketData/exploration/vrp-confirm-2026-11-13.json`.*
+
+**In one paragraph:** the vault pass came from two big crashes, 2000-02 and 2008, and doesn't hold up anywhere
+else. The rule often held the full 1.5x going *into* declines: 1997, 1998, 1999, 2020, 2022 and 2025. Its
+signal reads "insurance is expensive compared with how calm the market has been", and that is often what it
+looks like just before a fall. On four markets it had never seen, it lost to simply holding the market every
+time. In the Russell 2000 that was clearly not bad luck.
+
+## Test 1: every S&P 500 decline of 10% or more (from 1993)
+
+| Decline | Market | VRP | Its weight | Peak to 12 months after the bottom: market | VRP |
+|---|---|---|---|---|---|
+| Oct 1997 | −10.8% | **−16.0%** | 1.5x | +10.1% | +10.5% |
+| Jul-Aug 1998 (LTCM) | −19.2% | **−27.9%** | 1.5x | +13.0% | +14.5% |
+| Jul-Oct 1999 | −11.8% | **−18.0%** | 1.5x | −1.7% | −2.5% |
+| Mar-Apr 2000 | −11.1% | −5.4% | 0.9x | −21.6% | −10.9% |
+| 2000-2002 (dot-com) | −47.4% | −42.7% | 1.05x | −28.4% | −28.7% |
+| *2007-2009 (excluded)* | *−55.3%* | *−45.2%* | *0.7x* | *−22.9%* | *+0.7%* |
+| 2015-16 | −13.0% | −1.1% | 0.7x | +12.6% | +19.4% |
+| Jan-Feb 2018 | −10.1% | −10.2% | 1.0x | −3.8% | −6.9% |
+| Q4 2018 | −19.4% | −14.8% | 0.7x | +12.8% | **+2.3%** |
+| 2020 Covid | −33.8% | **−47.5%** | 1.5x | +17.7% | **−0.4%** |
+| 2022 | −24.5% | **−34.5%** | 1.4x | −6.6% | −12.5% |
+| Feb-Apr 2025 | −18.7% | **−23.2%** | 1.3x | +12.0% | **+4.1%** |
+
+Leaving out 2008: it lost less in **4 of 11** (needed 8) and was ahead 12 months after the bottom in **4 of 11**
+(needed 6). **Fail.**
+
+## Test 2: four markets it had never seen (the real test)
+
+| Market | Stretch | VRP | Buy and hold | Sharpe gap, 95% range |
+|---|---|---|---|---|
+| Nasdaq-100 (VXN, QQQ) | 2004-2026 | 9.8%/yr, Sharpe 0.63, $83k | **14.6%, 0.74, $221k** | −0.11 (−0.53 to +0.29) |
+| Dow (VXD, DIA) | 2009-2026 | 12.0%, 0.65, $76k | **12.8%, 0.81, $86k** | −0.16 (−0.36 to +0.06) |
+| Russell 2000 (RVX, IWM) | 2012-2026 | 1.7%, 0.10, $13k | **10.4%, 0.52, $40k** | **−0.42 (−0.65 to −0.18)** |
+| Europe (VSTOXX, French Europe) | 2002-2026 | 2.3%, 0.11, $18k | **8.0%, 0.43, $67k** | −0.32 (−0.66 to 0.00) |
+
+Sharpe at least as high in **0 of 4** (needed 3). **Fail.** In the Russell 2000, the whole range is below zero:
+the rule really did worse.
+
+## Test 3: time periods on the S&P 500
+
+| Stretch | VRP Sharpe | Market Sharpe |
+|---|---|---|
+| 1993-1999 | 1.20 | **1.25** |
+| 2000-2005 | **−0.13** | −0.17 |
+| 2006-2009 | **0.19** | −0.11 |
+| 2010-2015 | **1.16** | 1.00 |
+| 2016-2020 | 0.54 | **0.93** |
+| 2021-2026 | 0.68 | **0.76** |
+
+Better in **3 of 6** (needed 4). **Fail.**
+
+## Information
+
+- **1993-2026 overall:** 13.3% a year, Sharpe 0.66, worst drop −40%, against 10.9%, 0.61 and −51%. Ahead
+  over the whole stretch, but only because of 2000-02 and 2008.
+- **Rolling 5-year windows:** more money in 68%, a better Sharpe in 54% (about a coin flip).
+- **Settings:** no setting changes the picture. Sharpe 0.60 to 0.69 for risk aversion 2 to 5, caps of 1x to 2x
+  and a rolling 10-year regression, against the market's 0.61.
+
+## What this means
+
+The variance risk premium is real as an insurance price: option sellers do earn it. But **as a signal for when to
+own stocks it doesn't work** outside two crises. Not added to the live paper record.
