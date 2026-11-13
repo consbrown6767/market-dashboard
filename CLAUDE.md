@@ -59,6 +59,7 @@ Fed calendar), Events (Polymarket), Status.
   point-in-time S&P 500 members `shared/sp500_history.json`), `collectors/macro_timing.py` (`docs/macro-timing/`; `gw_monthly`).
 - Tournament of all 24 strategies (2026-11-12): `collectors/tournament.py`, `docs/tournament/`. None beats SPY by
   the rules; 10-month trend is safest; leveraged trend (2x above 200-day average) made the most money.
+- Trend across many markets (tested 2026-11-13, failed): `collectors/multi_trend.py`, `docs/multi-trend/`.
 - Failure alerts: `collectors/watchdog.py` (every 30 min) pushes to the owner's iPhone via ntfy; channel
   name in `~/.config/market-dashboard/alert.env`. Don't print or copy it. No email: owner declined. `collectors/briefing.py` sends the
   10:00 daily update on the same channel (contents chosen by the owner; see README before changing). New jobs need no watchdog change:
