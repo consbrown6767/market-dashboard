@@ -1,6 +1,6 @@
 # Market Dashboard: the complete reference
 
-*Last updated 2026-11-13 (constant leverage tested: 2x more money but −98.7% in 1929-32, fails; monthly savers at 2x ahead in all 60 cohorts; Fed-day drift and Fed cycle tested: both faded after publication, Fed calendar gap found; earnings-week premium tested: failed; overnight-only investing and trend across many markets tested: both failed; round 4 and tournament of all 24 strategies: none beats SPY by the rules; 10-month trend safest, leveraged trend most money; pairs trading and macro timing models tested: both failed; risk budget model, stocks + Treasuries by equal risk, tested 1965-2026: failed; nine classic published strategies tested on 100 years: none beats the market, 10-month trend is safer; volatility-managed market model tested on 100 years of data: failed, not live; stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
+*Last updated 2026-11-13 (Fed calendar parser fixed and history reloaded; constant leverage tested: 2x more money but −98.7% in 1929-32, fails; monthly savers at 2x ahead in all 60 cohorts; Fed-day drift and Fed cycle tested: both faded after publication, Fed calendar gap found; earnings-week premium tested: failed; overnight-only investing and trend across many markets tested: both failed; round 4 and tournament of all 24 strategies: none beats SPY by the rules; 10-month trend safest, leveraged trend most money; pairs trading and macro timing models tested: both failed; risk budget model, stocks + Treasuries by equal risk, tested 1965-2026: failed; nine classic published strategies tested on 100 years: none beats the market, 10-month trend is safer; volatility-managed market model tested on 100 years of data: failed, not live; stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
 the four prediction models, the political game machine, how it all runs, and the rules agreed along
 the way. Numbers are as of the evening of Monday 2026-11-09 unless a date says otherwise.*
 
@@ -804,8 +804,9 @@ the 5-day run-up before announcements (+0.035% a day, t 2.5), below the t ≥ 3 
 Lucca & Moench's pre-Fed drift: +0.46% on decision days 2002-2011, +0.10% since 2012 (t 0.5, no better than other
 days). Cieslak et al.'s even-weeks cycle beat SPY 2002-2016, then made 5.5% a year vs 15.0% since 2017. Still alive
 on 2 pm-to-2 pm intraday windows: +0.20% per meeting 2016-2026 (t 2.9; information only, a live paper record would
-need the owner's OK). **Found:** `econ_calendar` misses 5 Fed meetings that spanned two months (parser in
-`spx_move.py` doesn't read "April/May 30-1"); fixed in the test's code only, owner to decide on the parser. Not live.
+need the owner's OK). **Found and fixed** (owner's OK, 2026-11-13): the Fed parser in `spx_move.py` skipped 5 meetings written
+"April/May 30-1" (2013-2019) and kept a no-decision 2003-09-15 meeting; it now reads both forms and keeps only
+meetings with a statement. `econ_calendar` reloaded; the S&P move model learns from the corrected days. Not live.
 
 ### Also tested: constant leverage (2026-11-13, 2x fails the safety rules; `docs/constant-leverage/`)
 Always 2x the US market, 1927-2026: 12.4% a year vs 10.2% (best fixed level in hindsight; above it, less money), but

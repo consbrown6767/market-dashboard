@@ -157,7 +157,19 @@ def vix_backup(db, day: str, now: datetime) -> bool:
 
 
 MONTHS = {m: i for i, m in enumerate(("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"), 1)}
-FED_HEADING = re.compile(r"^([A-Za-z]+)\s+(\d{1,2})(?:\s*-\s*(?:([A-Za-z]+)\s+)?(\d{1,2}))?\s+Meeting\s+-\s+(\d{4})$")
+# "January 31-February 1 Meeting - 2012", and since 2013 also "April/May 30-1 Meeting - 2013"
+FED_HEADING = re.compile(r"^([A-Za-z]+)(?:/([A-Za-z]+))?\s+(\d{1,2})(?:\s*-\s*(?:([A-Za-z]+)\s+)?(\d{1,2}))?"
+                         r"\s+Meeting\s+-\s+(\d{4})$")
+
+
+def _has_statement(h) -> bool:
+    """True if the history-page section under heading h links a policy statement (a decision was announced)."""
+    for el in h.next_elements:
+        if getattr(el, "name", None) == "h5":
+            return False
+        if getattr(el, "name", None) == "a" and el.get_text(strip=True).lower().startswith("statement"):
+            return True
+    return False
 
 
 def fed_meetings(html: str) -> dict[str, str]:
@@ -178,11 +190,13 @@ def fed_meetings(html: str) -> dict[str, str]:
             d = date(int(y.group(1)), MONTHS[month.get_text(strip=True).split("/")[-1][:3].lower()],
                      int(text.replace("*", "").split("-")[-1]))
             out[d.isoformat()] = "with projections" if "*" in text else ""
-    for h in soup.select("h5"):  # history pages: "January 31-February 1 Meeting - 2012"
+    for h in soup.select("h5"):  # history pages, one heading per meeting
         m = FED_HEADING.match(h.get_text(" ", strip=True))
-        if m:
-            month = m.group(3) or m.group(1)
-            out[date(int(m.group(5)), MONTHS[month[:3].lower()], int(m.group(4) or m.group(2))).isoformat()] = ""
+        if not m or not _has_statement(h):
+            continue  # e.g. 2003-09-15, a meeting without a decision (announced on the 16th)
+        first, slash, day1, month2, day2, year = m.groups()
+        month = month2 or (slash if day2 else None) or first
+        out[date(int(year), MONTHS[month[:3].lower()], int(day2 or day1)).isoformat()] = ""
     return out
 
 

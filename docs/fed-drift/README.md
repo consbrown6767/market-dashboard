@@ -64,7 +64,7 @@ The pattern flipped: since 2017, week 1 (odd) was the best week.
   2018-08-01, 2019-05-01. The Fed's history pages write these as "April/May 30-1", which the parser in
   `spx_move.py` doesn't read. They were added in this test's code, as the plan said. Also dropped
   2003-09-15: the Fed's page lists both the 15th and 16th, and the decision came on the 16th. The
-  stored table itself was not changed (see "Open question" below).
+  stored table itself was fixed afterwards (see below).
 - **Replication:** the pre-2012 drift (+0.46% a day, all of the market's excess return) is close to
   Lucca & Moench's +0.49%. The 2002-2016 cycle pattern matches Cieslak et al.'s even-week finding.
   So the code reproduces the papers. The later failure is in the market, not in the code.
@@ -79,13 +79,13 @@ would be tradable in principle: buy at 2 pm the day before, sell just before 2 p
 information-only look at already-seen data, so it can't count as a pass. The honest next step is a
 **live paper record** going forward. It's free, but it's a new daily job, so it needs the owner's OK.
 
-## Open question for the owner
+## The calendar fix (2026-11-13, after these results, with the owner's OK)
 
-The calendar gap also affects the history the S&P 500 move-size model (v1) learns from: five Fed
-days are marked as ordinary days. v1 refits on all past days each evening, so its Fed-day effect is
-estimated from about 195 Fed days instead of 200 (a small effect). Upcoming meetings are flagged
-correctly, because 2026-2027 have none that span two months. Fixing the parser changes v1's training
-data, so it waits for the owner's decision.
+The parser in `spx_move.py` now reads both heading forms, and keeps only meetings whose section links
+a policy statement, which drops 2003-09-15. The Fed history in `econ_calendar` was reloaded. Every year from
+2002 to 2027 now has 8 decisions (2020: 7 scheduled). The S&P 500 move-size model (v1) refits each
+evening, so from then on it learns from the 5 corrected Fed days. That's a data fix, not a change to its
+inputs or method. This test's own corrections are now redundant, and its results are unchanged.
 
 ## Sources
 

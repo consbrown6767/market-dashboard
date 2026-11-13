@@ -115,10 +115,16 @@ class Data(unittest.TestCase):
           <div class="fomc-meeting"><div class="fomc-meeting__month">Jan/Feb</div><div class="fomc-meeting__date">31-1</div></div>
           <div class="fomc-meeting"><div class="fomc-meeting__month">March</div><div class="fomc-meeting__date">16-17*</div></div>
           <div class="fomc-meeting"><div class="fomc-meeting__month">August</div><div class="fomc-meeting__date">22 (notation vote)</div></div></div>
-          <h5>January 31-February 1 Meeting - 2012</h5><h5>March 2 (unscheduled) Meeting - 2020</h5>
-          <h5>March 17-18 (cancelled) Meeting - 2020</h5><h5>October 15 Conference Call - 2008</h5><h5>June 9-10 Meeting - 2020</h5>"""
+          <h5>January 31-February 1 Meeting - 2012</h5><p><a href="#">Statement</a></p>
+          <h5>March 2 (unscheduled) Meeting - 2020</h5><p><a href="#">Statement</a></p>
+          <h5>March 17-18 (cancelled) Meeting - 2020</h5><h5>October 15 Conference Call - 2008</h5>
+          <h5>June 9-10 Meeting - 2020</h5><p><a href="#">Minutes</a> <a href="#">Statement</a></p>
+          <h5>April/May 30-1 Meeting - 2013</h5><p><a href="#">Statement</a></p>
+          <h5>September 15 Meeting - 2003</h5><p><a href="#">Agenda</a> <a href="#">Minutes</a></p>
+          <h5>September 16 Meeting - 2003</h5><p><a href="#">Statement</a></p>"""
         self.assertEqual(m.fed_meetings(html), {"2027-02-01": "", "2027-03-17": "with projections",
-                                                "2012-02-01": "", "2020-06-10": ""})
+                                                "2012-02-01": "", "2020-06-10": "", "2013-05-01": "",
+                                                "2003-09-16": ""})
 
     def test_todays_bar_waits_for_the_close(self):
         h = pd.DataFrame({"Close": [1.0, 2.0]}, index=["2026-11-06", "2026-11-09"])

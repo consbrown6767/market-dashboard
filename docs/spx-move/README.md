@@ -33,7 +33,7 @@ using only earlier days), its ranges were **about 4% more accurate than either s
 | VIX | The options market's own expected move for the next 30 days | Cboe's free daily file, 1990 on |
 | Dealer gamma | SqueezeMetrics GEX from the trading day before: whether it's negative, and where it ranks in the past year. Today's figure may not be out by the evening, so it's never used | `market_gamma`, 2011 on |
 | Down day | How far the index fell today (0 if it rose). Drops raise volatility more than rallies do | S&P bars |
-| Scheduled news (#5) | Whether tomorrow is a Fed decision day (2:00 pm), a CPI day (8:30 am) or a jobs-report day (8:30 am) | Fed calendar from federalreserve.gov. CPI and jobs dates from BLS, which blocks scripts, so they were read in a browser into `shared/release_dates.json`. Past dates are the days reports actually came out, including the 2013 and 2025 shutdown delays. Schedule known through Dec 2027 |
+| Scheduled news (#5) | Whether tomorrow is a Fed decision day (2:00 pm), a CPI day (8:30 am) or a jobs-report day (8:30 am) | Fed calendar from federalreserve.gov (parser fixed 2026-11-13: 5 meetings spanning two months, 2013-2019, had been missed). CPI and jobs dates from BLS, which blocks scripts, so they were read in a browser into `shared/release_dates.json`. Past dates are the days reports actually came out, including the 2013 and 2025 shutdown delays. Schedule known through Dec 2027 |
 
 Only scheduled news counts. Surprise Fed moves (Jan 2008, March 2020) and the cancelled March 2020
 meeting are left out, because nobody knew about them the day before.

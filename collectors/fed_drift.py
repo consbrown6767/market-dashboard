@@ -25,6 +25,7 @@ import tournament as tn
 RESULTS_DIR = Path.home() / "MarketData" / "fed_drift"
 
 # ---- fixed by the plan
+# Since the parser fix of 2026-11-13 these are already right in econ_calendar; kept so the test runs as planned.
 ADD = ("2013-05-01", "2017-02-01", "2017-11-01", "2018-08-01", "2019-05-01")
 DROP = ("2003-09-15",)
 COST = 0.0001

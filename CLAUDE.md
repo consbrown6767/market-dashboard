@@ -63,7 +63,7 @@ Fed calendar), Events (Polymarket), Status.
 - Overnight-only investing (tested 2026-11-13, failed): `collectors/overnight.py`, `docs/overnight/`.
 - Earnings-week premium (tested 2026-11-13, failed): `collectors/earnings_premium.py`, `docs/earnings-premium/`.
 - Fed-day drift and Fed cycle (tested 2026-11-13, both faded after publication): `collectors/fed_drift.py`,
-  `docs/fed-drift/`. Found: `econ_calendar` misses Fed meetings spanning two months (owner to decide on a parser fix).
+  `docs/fed-drift/`. Found and fixed (2026-11-13, owner's OK): the Fed parser skipped meetings spanning two months.
 - Constant leverage (tested 2026-11-13, 2x fails safety rules; savers at 2x won every cohort): `collectors/constant_leverage.py`,
   `docs/constant-leverage/`.
 - Failure alerts: `collectors/watchdog.py` (every 30 min) pushes to the owner's iPhone via ntfy; channel

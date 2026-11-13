@@ -407,8 +407,8 @@ Each has a plan fixed before results and a write-up in `docs/<name>/`; no jobs, 
 - `collectors/earnings_premium.py` (`docs/earnings-premium/`): hold S&P 500 stocks only on the 3 days
   around earnings (`earnings_dates`, `daily_bars_adj`), 2016-2026.
 - `collectors/fed_drift.py` (`docs/fed-drift/`): pre-Fed drift and the even-weeks Fed cycle on SPY, 2002-2026;
-  SPY minute bars fetched live from Alpaca, not stored. Found: the Fed parser in `spx_move.py` skips meetings
-  written "April/May 30-1" (5 missing, 2013-2019); not fixed yet.
+  SPY minute bars fetched live from Alpaca, not stored. Found: the Fed parser in `spx_move.py` skipped meetings
+  written "April/May 30-1" (5 missing, 2013-2019); fixed 2026-11-13 and the history reloaded.
 - `collectors/constant_leverage.py` (`docs/constant-leverage/`): fixed 1.25x-3x of the US market, 1927-2026,
   daily and monthly reset, monthly savers; real SSO/UPRO (`UPRO_ADJ` in `index_daily`).
 
