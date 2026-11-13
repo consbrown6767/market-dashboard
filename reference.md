@@ -133,7 +133,7 @@ visible. The Status tab shows them.
 The look follows World Monitor: dense dark panels, monospace text, small uppercase panel titles,
 status dots and freshness badges. Every panel has a stable `data-panel` id because saved layouts
 depend on it. Panels drag and drop onto a 24-column grid, resize from the corner, hide with −, come
-back with +; layouts save per tab in the browser; **Reset layout** restores a tab. Under 900 px wide,
+back with +; layouts save per tab in the browser; **Reset layout** restores a tab. **A− / A+** (top right) make all text below the top bar smaller or bigger (80% to 200%), remembered per browser. Under 900 px wide,
 panels stack. Charts are TradingView Lightweight Charts 4.2.0, stored locally.
 
 | Tab | What it shows |

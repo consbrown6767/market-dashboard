@@ -51,6 +51,10 @@ body {
   flex-direction: column;
   -webkit-font-smoothing: antialiased;
 }
+/* Text size (A− / A+ in the top bar): zooms everything below the header; saved per browser. */
+.main { zoom: var(--ui-zoom, 1); }
+.text-size { display: flex; align-items: center; gap: 4px; }
+.text-size .dim { min-width: 34px; text-align: center; font-size: 11px; }
 a { color: inherit; }
 button { font: inherit; color: inherit; }
 ::-webkit-scrollbar { width: 8px; height: 8px; }

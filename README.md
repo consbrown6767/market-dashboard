@@ -37,7 +37,7 @@ dashed outline shows where it will land) and panels in the way are pushed down. 
 put, so you can, say, make a panel 3/4 wide (18 columns) and centre it. Drag a panel's bottom-right
 corner to resize it. **−** in a panel's header hides it; **+** (top right) lists the tab's panels to
 show or hide them, and says how many are hidden. The layout is saved per tab in this browser;
-**Reset layout** (top right) restores the current tab and shows every panel. Under 900px wide, panels
+**Reset layout** (top right) restores the current tab and shows every panel. **A− / A+** (top right) make all text below the top bar smaller or bigger (80% to 200%), remembered per browser. Under 900px wide, panels
 stack in one column. **Strike charts** (open interest, volume, IV): scroll to zoom,
 drag to pan, double-click to reset; the three share one zoom window, the y-axis rescales to the
 strikes in view, presets ±5/10/20%/All, and **Compressed** switches to a square-root scale.

@@ -818,6 +818,27 @@ loaders.status = async () => {
     .map((r) => `<tr><td>${r.id}</td><td>${esc(r.job)}</td><td>${etTime(r.started_at)}</td><td>${esc(r.status)}</td><td>${big(r.rows)}</td><td style="text-align:left;white-space:normal" class="dim">${esc(r.detail)}</td></tr>`).join("")}</tbody></table>`;
 };
 
+// ---------- text size: A− / A+ zoom everything below the top bar, remembered in this browser
+const TEXT_SIZES = [0.8, 0.9, 1, 1.1, 1.2, 1.35, 1.5, 1.75, 2];
+let textSize = 1;
+try { textSize = Number(localStorage.getItem("ui-zoom")) || 1; } catch (e) { /* no storage */ }
+function applyTextSize() {
+  document.documentElement.style.setProperty("--ui-zoom", textSize);
+  $("#text-size-pct").textContent = `${Math.round(textSize * 100)}%`;
+  $("#text-smaller").disabled = textSize <= TEXT_SIZES[0];
+  $("#text-bigger").disabled = textSize >= TEXT_SIZES[TEXT_SIZES.length - 1];
+  try { localStorage.setItem("ui-zoom", textSize); } catch (e) { /* ignore */ }
+  window.dispatchEvent(new Event("resize"));  // charts redraw at the new size
+}
+function stepTextSize(dir) {
+  const i = TEXT_SIZES.findIndex((z) => z >= textSize - 1e-9);
+  textSize = TEXT_SIZES[Math.min(TEXT_SIZES.length - 1, Math.max(0, (i < 0 ? 2 : i) + dir))];
+  applyTextSize();
+}
+$("#text-smaller").addEventListener("click", () => stepTextSize(-1));
+$("#text-bigger").addEventListener("click", () => stepTextSize(1));
+applyTextSize();
+
 $("#reset-layout").addEventListener("click", () => {
   Layout.reset($(`#view-${current} .grid[data-layout]:not([hidden])`));
   drawStrikeCharts();
