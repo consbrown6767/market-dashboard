@@ -363,6 +363,13 @@ results: `docs/stock-direction/README.md`. Code `collectors/stock_direction.py`,
   `explore`, `tune`, `signals`, `iv SYMBOL`, `earnings SYMBOL`, `data`; `--universe sp400` before the
   command for the other 400.
 
+### Volatility-managed market test (2026-11-12, failed, not live)
+
+`collectors/vol_managed.py`, plan and write-up in `docs/vol-managed/`. Tests Moreira & Muir's
+"hold less after wild months" rule on Kenneth French's daily returns (US 1926-2026, four other
+markets, 49 industries; table `ff_daily`, loaded by `vol_managed.py data`) and SPX. It lost to
+buy-and-hold on every pass rule. No job; rerun by hand with `vol_managed.py backtest`.
+
 ### Research scripts
 
 Run by hand with `~/MarketData/.venv/bin/python research/<script>.py`. They fetch what they need and

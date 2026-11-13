@@ -50,6 +50,8 @@ Fed calendar), Events (Polymarket), Status.
   `shared/stock_direction_live.json`, each naming its universe (a new or changed version gets a new number;
   2026 has been seen on both lists, so new versions are judged live only). Result: nothing reliably beats
   the base rate; crash protection alone is the one input that held up (also on the 400).
+- Volatility-managed market model (tested 2026-11-12, failed, not live): `collectors/vol_managed.py`,
+  `docs/vol-managed/` (plan + results). French daily data in `ff_daily` (US since 1926).
 - Failure alerts: `collectors/watchdog.py` (every 30 min) pushes to the owner's iPhone via ntfy; channel
   name in `~/.config/market-dashboard/alert.env`. Don't print or copy it. No email: owner declined. `collectors/briefing.py` sends the
   10:00 daily update on the same channel (contents chosen by the owner; see README before changing). New jobs need no watchdog change:

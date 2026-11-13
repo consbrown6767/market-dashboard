@@ -1,6 +1,6 @@
 # Market Dashboard: the complete reference
 
-*Last updated 2026-11-12 (stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
+*Last updated 2026-11-12 (volatility-managed market model tested on 100 years of data: failed, not live; stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
 the four prediction models, the political game machine, how it all runs, and the rules agreed along
 the way. Numbers are as of the evening of Monday 2026-11-09 unless a date says otherwise.*
 
@@ -211,6 +211,7 @@ from 2026-10-26. It can never be recovered for earlier dates.
 | `rates_daily` | 734 | 2023-12 → today | 3-month T-bill (FRED `DTB3`) |
 | `direction_iv_daily` | 885,570 | 2024-02-01 → today, 499 stocks | Implied-volatility measures per stock and day (call-vs-put gap, crash protection, at-the-money call and put volatility), for three minimum-trade rules. Computed by `stock_direction.py iv` from the two tables above |
 | `earnings_dates` | 23,791 | 2007 → announced, 500 stocks | Earnings report times, EPS estimate, reported EPS and surprise, from Yahoo Finance (`yfinance`, unofficial). Used only by the stage 4 tests (earnings week, post-earnings drift); not refreshed by any job |
+| `ff_daily` | 1,351,652 | 1926-07 → 2026-09 (US, 49 industries); 1990-07 → (4 other markets) | Kenneth French's daily returns (Dartmouth; CRSP-based, dividends in): US market minus T-bill and the T-bill, Developed ex US, Europe, Japan, Asia Pacific ex Japan, 49 value-weighted industries. Loaded by `vol_managed.py data` for the volatility-managed test; not refreshed by any job |
 | `stock_bars_split_adj` (view) | | | `stock_bars_daily` in today's share terms. Use it for any price series across a split (returns, drawdowns, volatility); use the raw table to match strikes |
 | `daily_bars_adj` | 16,374 | 2016 → today, 6 symbols | Split- and dividend-adjusted bars for the Spreads tab |
 | `market_gamma` | 3,904 | 2011-05-02 → 2026-11-06 | SqueezeMetrics GEX and DIX |
@@ -721,6 +722,16 @@ prices, dividends taken out, T-bill rate, binomial early-exercise premium for pu
   it passed the pre-registered fresh test. Not live by judgment: drift (failed on the S&P 100) and
   the reversed lottery signal (runs against its research).
 
+
+### Also tested: volatility-managed market (2026-11-12, failed; `docs/vol-managed/`)
+Moreira & Muir (2017): hold more of the market after calm months, less after wild ones (amount =
+c ÷ last month's variance, c from past data only, up to 1.5x or never borrowing). Plan fixed first
+(`PLAN.md`), tested on 100 years of US data (French), 4 other markets, 49 industries and the S&P 500.
+Failed all five pass rules: 1937-2026 9.3% a year vs 10.7% for buy-and-hold (Sharpe 0.47 vs 0.52);
+2016-2026 9.3% vs 14.9%; worse Sharpe in all 4 other markets and 42 of 49 industries. It cuts crash
+losses a lot (2008: −11% vs −50%) but misses the rebounds (Apr-Dec 2020: +5% vs +55%). The paper's
+own result rests on 1926-1936; from 1937 even its look-ahead setup only ties the market. Not live.
+
 ---
 
 ## 12. Alerts and the morning update
@@ -828,6 +839,7 @@ Use `~/MarketData/.venv/bin/python` as Python.
 | S&P model: run / backtest / compare methods | `spx_move.py` / `spx_move.py backtest` / `spx_move.py research` (from `collectors/`) |
 | Gamma tracker replay of past days | `strategy_collector.py replay` |
 | Stock direction model (from `collectors/`) | `stock_direction.py live --dry-run 2026-11-10` (what it would predict, logs nothing) / `explore` / `tune` / `signals` / `iv SYMBOL` / `earnings SYMBOL`; add `--universe sp400` (before the command) for the other 400 |
+| Volatility-managed test (from `collectors/`) | `vol_managed.py data` (download French's files) / `vol_managed.py backtest` |
 | Collector tests | `cd collectors && ~/MarketData/.venv/bin/python -m unittest test_spx_move test_ledger test_scoring test_strategy_collector test_stock_direction` |
 | Political machine (from `~/MarketData/politics`) | `run_all.py` (rebuild), `run_all.py --log` (log forecasts), `turns.py add --headline "..." --multiplier id=1.2`, `turns.py list`, `forecasts.py questions`, `forecasts.py verify`, `calibrate.py`, `python -m unittest` |
 | Restore from backup | `restore_backup.py ~/MarketData/options.db`, then `install.sh`, then `backfill_alpaca.py` |
