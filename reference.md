@@ -1,6 +1,6 @@
 # Market Dashboard: the complete reference
 
-*Last updated 2026-11-13 (trend across many markets tested: failed; round 4 and tournament of all 24 strategies: none beats SPY by the rules; 10-month trend safest, leveraged trend most money; pairs trading and macro timing models tested: both failed; risk budget model, stocks + Treasuries by equal risk, tested 1965-2026: failed; nine classic published strategies tested on 100 years: none beats the market, 10-month trend is safer; volatility-managed market model tested on 100 years of data: failed, not live; stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
+*Last updated 2026-11-13 (overnight-only investing and trend across many markets tested: both failed; round 4 and tournament of all 24 strategies: none beats SPY by the rules; 10-month trend safest, leveraged trend most money; pairs trading and macro timing models tested: both failed; risk budget model, stocks + Treasuries by equal risk, tested 1965-2026: failed; nine classic published strategies tested on 100 years: none beats the market, 10-month trend is safer; volatility-managed market model tested on 100 years of data: failed, not live; stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
 the four prediction models, the political game machine, how it all runs, and the rules agreed along
 the way. Numbers are as of the evening of Monday 2026-11-09 unless a date says otherwise.*
 
@@ -786,6 +786,12 @@ and long/short (Moskowitz, Ooi & Pedersen), 2007-2026. Long-only: 4.8% a year, w
 +52% in 2008, +3% in 2022, −30% in 2018 and 2020 (t 1.6). Half SPY, half long/short: Sharpe 0.656 vs SPY's
 0.653 over the whole stretch, 0.68 vs 0.92 since 2013. Plain 60/40 had the best Sharpe (0.72). Not live.
 
+
+### Also tested: overnight-only investing (2026-11-13, failed; `docs/overnight/`)
+Hold SPY close to next open, cash by day. Before costs 94% of SPY's 1993-2026 gain came overnight, but at
+0.01% per trade (two a day) it made 4.6% a year vs 10.8%. Since 2009 even free trading loses (8.7% vs
+14.7%): daytime hours earn again. QQQ and IWM fail too. Data: `<SYM>_RAW` in `index_daily`, Yahoo dividends. Not live.
+
 ---
 
 ## 12. Alerts and the morning update
@@ -899,6 +905,7 @@ Use `~/MarketData/.venv/bin/python` as Python.
 | Pairs / macro tests (from `collectors/`) | `pairs_model.py members` / `prices` / `backtest`; `macro_timing.py data` / `backtest` |
 | Tournament (from `collectors/`) | `tournament.py data` / `tournament.py backtest` |
 | Multi-market trend (from `collectors/`) | `multi_trend.py data` / `multi_trend.py backtest` |
+| Overnight test (from `collectors/`) | `overnight.py data` / `overnight.py backtest` |
 | Collector tests | `cd collectors && ~/MarketData/.venv/bin/python -m unittest test_spx_move test_ledger test_scoring test_strategy_collector test_stock_direction` |
 | Political machine (from `~/MarketData/politics`) | `run_all.py` (rebuild), `run_all.py --log` (log forecasts), `turns.py add --headline "..." --multiplier id=1.2`, `turns.py list`, `forecasts.py questions`, `forecasts.py verify`, `calibrate.py`, `python -m unittest` |
 | Restore from backup | `restore_backup.py ~/MarketData/options.db`, then `install.sh`, then `backfill_alpaca.py` |
