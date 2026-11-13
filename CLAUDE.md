@@ -66,6 +66,8 @@ Fed calendar), Events (Polymarket), Status.
   `docs/fed-drift/`. Found and fixed (2026-11-13, owner's OK): the Fed parser skipped meetings spanning two months.
 - Math exploration (2026-11-13): `collectors/exploration.py`, `docs/exploration/` (2006-2026 vault, opened once). Only the
   variance risk premium passed, weakly, then failed its confirmation (`collectors/vrp_confirm.py`): not live.
+- Currency strategies (tested 2026-11-13, failed): G10 `collectors/fx_research.py`, emerging markets `collectors/fx_em.py`,
+  `docs/fx/`. Data in `macro_series` (FRED/OECD rates, CPI, unemployment, spot; Yahoo EM spot). Both vaults now used.
 - Live paper record (from 2026-11-13, owner's OK): `collectors/paper_record.py` (job `paper`, weekdays 09:10/16:40/20:40),
   plan `docs/paper-record/PLAN.md`; tables `paper_positions`/`paper_marks` (hash-chained: never edit) and `paper_skips`;
   Scorecard panel `sc-paper`. Leveraged trend, 10-month trend, pre-Fed drift vs SPY; a rule change is a new version.

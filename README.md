@@ -412,6 +412,8 @@ Each has a plan fixed before results and a write-up in `docs/<name>/`; no jobs, 
 - `collectors/exploration.py` (`docs/exploration/`): 15 versions of 8 math methods, sandbox 1946-2005, vault 2006-2026
   opened once for three finalists; the vault won't load until `FINALISTS.md` is committed. Variance risk premium passed weakly, then failed
   its confirmation (`collectors/vrp_confirm.py`: S&P declines, four fresh markets, time periods; new fear indexes in `index_daily`).
+- `collectors/fx_research.py` and `collectors/fx_em.py` (`docs/fx/`): currency strategies from international monetary
+  theory, G10 (vault 2006-2026) and 13 emerging markets (vault 2014-2026), all finalists failed. New table `macro_series`.
 - **Live paper record** (from 2026-11-13, not a test): `collectors/paper_record.py`, job `paper` (weekdays 09:10,
   16:40, 20:40), plan `docs/paper-record/PLAN.md`. Leveraged trend, 10-month trend and pre-Fed drift, each position
   written before it takes effect into `paper_positions` and scored daily against SPY in `paper_marks` (both
