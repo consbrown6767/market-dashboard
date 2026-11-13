@@ -40,4 +40,4 @@ Propose a live paper record to the owner. Nothing is traded.
 
 ## Changes after results
 
-(none yet)
+(none; results in README.md, "Confirmation test")

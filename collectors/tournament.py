@@ -7,6 +7,8 @@ Commands (run with ~/MarketData/.venv/bin/python from collectors/):
   data       CBOE PUT, BXM, PPUT, CLL daily history and the S&P 500 total return (Yahoo ^SP500TR)
              into index_daily
   backtest   round 4 verdicts and the tournament; results to ~/MarketData/tournament/backtest-<date>.json
+  confirm    leveraged trend confirmation test (CONFIRM_PLAN.md): fresh markets, the real SSO fund, 10-year
+             stretches; downloads SSO and SPY adjusted closes from Yahoo into index_daily first
 """
 
 from __future__ import annotations
@@ -290,6 +292,95 @@ def job_backtest(db) -> dict:
     return res
 
 
+def confirm_data(db) -> str:
+    import yfinance as yf
+    now = datetime.now(ET).isoformat(timespec="seconds")
+    rows = []
+    for sym in ("SSO", "SPY"):
+        t = yf.download(sym, start="2006-01-01", progress=False, auto_adjust=True)["Close"].iloc[:, 0].dropna()
+        rows += [(f"{sym}_ADJ", d.strftime("%Y-%m-%d"), None, None, None, float(v), "yahoo-adjusted", now) for d, v in t.items()]
+    db.executemany("INSERT OR REPLACE INTO index_daily VALUES (?,?,?,?,?,?,?,?)", rows)
+    db.commit()
+    return f"{len(rows)} rows"
+
+
+def _daily_index(db, sym):
+    s = pd.read_sql("SELECT date, close FROM index_daily WHERE symbol=? ORDER BY date", db, params=(sym,), index_col="date")["close"]
+    s.index = pd.to_datetime(s.index)
+    return s
+
+
+def job_confirm(db) -> dict:
+    res = {"made": datetime.now(ET).isoformat(timespec="seconds"), "plan": "docs/tournament/CONFIRM_PLAN.md",
+           "data": confirm_data(db)}
+    rf = rf_monthly(db)
+    # 1. fresh markets
+    fresh = {}
+    for mk in cs.MARKETS:
+        d, mo = cs.market(db, mk)
+        lt = window(lev_trend(d), "1991-05", "2026-09")
+        b = mo["R"].reindex(lt.index)
+        a, bb = vm.stats(lt, rf), vm.stats(b, rf)
+        fresh[mk] = {"strategy": a, "buy_hold": bb, "more_money": a["10k_becomes"] > bb["10k_becomes"],
+                     "sharpe_at_least": a["sharpe"] >= bb["sharpe"],
+                     "info_1x": vm.stats(window(lev_trend(d, 1.0), "1991-05", "2026-09"), rf)}
+    res["fresh_markets"] = fresh
+    # 2. the real SSO fund
+    sso, spy = _daily_index(db, "SSO_ADJ"), _daily_index(db, "SPY_ADJ")
+    df = pd.DataFrame({"sso": sso, "spy": spy}).dropna()
+    us_daily, _ = cs.market(db, "us")
+    rfd = us_daily["rf"].reindex(df.index).ffill()
+    ma = df["spy"].rolling(200).mean()
+    sig = (df["spy"] > ma).astype(float).where(ma.notna())
+    w = sig.shift(2)                     # signal at day d's close, trade at d+1's close, earns from d+2
+    rs, rp = df["sso"].pct_change(), df["spy"].pct_change()
+    r = (w * rs + (1 - w) * rfd - SWITCH_COST * w.diff().abs().fillna(0)).dropna()
+    this_month = pd.Period(date.today().strftime("%Y-%m"), "M")
+    m = ((1 + r).groupby(r.index.to_period("M")).prod() - 1).loc[:this_month - 1]
+    m = m.iloc[1:]
+    spm = ((1 + rp.loc[r.index]).groupby(r.index.to_period("M")).prod() - 1).reindex(m.index)
+    ssom = ((1 + rs.loc[r.index]).groupby(r.index.to_period("M")).prod() - 1).reindex(m.index)
+    res["real_sso"] = {"from": str(m.index[0]), "to": str(m.index[-1]), "strategy": vm.stats(m, rf), "spy": vm.stats(spm, rf),
+                       "sso_held_always": vm.stats(ssom, rf), "switches_per_year": round(float((w.diff().abs() > 0).sum() / (len(w) / 252)), 1),
+                       "years": {str(y): [round(float(np.prod(1 + g) - 1) * 100, 1), round(float(np.prod(1 + spm.loc[g.index]) - 1) * 100, 1)]
+                                 for y, g in m.groupby(m.index.year)}}
+    res["real_sso"]["more_money"] = res["real_sso"]["strategy"]["10k_becomes"] > res["real_sso"]["spy"]["10k_becomes"]
+    # 3. every 10-year stretch
+    d, mo = cs.market(db, "us")
+    lt = lev_trend(d)
+    wins, rows = 0, []
+    for y in range(1928, 2017):
+        a = window(lt, f"{y}-01", f"{y + 9}-12")
+        b = mo["R"].reindex(a.index)
+        ga, gb = float(np.prod(1 + a)), float(np.prod(1 + b))
+        rows.append((y, round(ga, 2), round(gb, 2)))
+        wins += ga > gb
+    worst = min(rows, key=lambda x: x[1] / x[2])
+    res["ten_year"] = {"stretches": len(rows), "ahead": wins, "share": round(wins / len(rows), 3),
+                       "worst": {"start": worst[0], "strategy_x": worst[1], "market_x": worst[2]}}
+    # info: other averages and leverage
+    info = {}
+    for n_ma in (100, 150, 250):
+        lvl = (1 + d["ex"] + d["rf"]).cumprod()
+        mav = lvl.rolling(n_ma).mean()
+        ww = ((lvl > mav).astype(float).where(mav.notna()) * 2).shift(1).dropna()
+        x = d.loc[ww.index]
+        rr = x["rf"] + ww * x["ex"] - (ww - 1).clip(lower=0) * BORROW_SPREAD / 252 - SWITCH_COST * ww.diff().abs().fillna(0)
+        mm = ((1 + rr).groupby(rr.index.to_period("M")).prod() - 1).iloc[1:]
+        info[f"{n_ma}-day"] = {"1928-2026": vm.stats(window(mm, "1928-01", "2026-09"), rf), "2016-2026": vm.stats(window(mm, "2016-01", "2026-09"), rf)}
+    res["info_averages"] = info
+    f, s2, t3 = res["fresh_markets"], res["real_sso"], res["ten_year"]
+    res["verdict"] = {"1_fresh_money_3_of_4": sum(v["more_money"] for v in f.values()) >= 3,
+                      "1_fresh_sharpe_3_of_4": sum(v["sharpe_at_least"] for v in f.values()) >= 3,
+                      "2_real_sso_more_money": s2["more_money"], "3_ten_year_70pct": t3["share"] >= 0.70}
+    res["verdict"]["confirmed"] = all(res["verdict"].values())
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    path = RESULTS_DIR / f"confirm-{date.today().isoformat()}.json"
+    path.write_text(json.dumps(res, indent=2, default=str))
+    res["_path"] = str(path)
+    return res
+
+
 def main() -> int:
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     db = connect()
@@ -300,6 +391,8 @@ def main() -> int:
         print(detail)
     elif cmd == "backtest":
         print(json.dumps(job_backtest(db), indent=1, default=str))
+    elif cmd == "confirm":
+        print(json.dumps(job_confirm(db), indent=1, default=str))
     else:
         print(__doc__)
         return 1

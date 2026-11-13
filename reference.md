@@ -775,6 +775,9 @@ Best risk-adjusted: **10-month trend** (10.0% a year, Sharpe 0.79, worst drop âˆ
 within noise, its crash cuts consistent). Most money: **leveraged trend** (2x above the 200-day average:
 12.9% a year, $109k vs $77k; 98-year Sharpe edge beyond noise; failed since 2016 on Sharpe). CBOE
 index history and `SP500TR` are in `index_daily`. Not live.
+Confirmation test (`CONFIRM_PLAN.md`): leveraged trend **confirmed** by its pre-set rules. 3 of 4 fresh markets
+(Japan âˆ’86%), the real SSO fund 2007-2026 $90.7k vs SPY $72.8k (Sharpe 0.55 vs 0.64), ahead in 79 of 89
+10-year stretches since 1928.
 
 ---
 

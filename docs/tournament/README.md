@@ -145,3 +145,42 @@ roughly matched the S&P 500 since 1989, while being in cash for the worst of 200
 
 None: nothing live. Rerun: `tournament.py data` then `tournament.py backtest` (needs the data
 commands of the earlier rounds).
+
+## Confirmation test of leveraged trend (2026-11-12): confirmed, with clear caveats
+
+*Plan fixed first: `CONFIRM_PLAN.md` (commit `a25d9e3`). Results: `~/MarketData/tournament/confirm-2026-11-12.json`.*
+
+**1. Four fresh markets, 1991-05 to 2026-09** ($10k, in US dollars):
+
+| Market | Leveraged trend | Buy and hold | Sharpe | Worst drop |
+|---|---|---|---|---|
+| Developed ex US | **$510k** (11.7% a year) | $96k (6.6%) | **0.51** vs 0.33 | −39% vs −56% |
+| Europe | **$471k** (11.5%) | $158k (8.1%) | **0.47** vs 0.40 | −45% vs −59% |
+| Asia Pacific ex Japan | **$1.83M** (15.8%) | $193k (8.7%) | **0.58** vs 0.40 | −39% vs −60% |
+| **Japan** | **$10.9k (0.2%)** | $34k (3.5%) | 0.05 vs 0.14 | **−86%** vs −58% |
+
+3 of 4: pass. Japan shows the danger: a market that goes sideways for 35 years, with many false
+signals, whipsawed the 2x version into an −86% drop.
+
+**2. The real 2x fund (SSO), signal on SPY, trading a day after the signal, 2007-05 to 2026-10:**
+$90.7k against SPY's $72.8k (12.0% vs 10.7% a year). It had a lower Sharpe ratio (0.55 vs 0.64),
+more swings (22% vs 15% a year) and a smaller worst drop (−38% vs −51%). It switched 5.5 times a year.
+Holding SSO all the time: $137k, but a −81% drop. Data checked: SSO's 2008 (−67.9%) and 2022
+(−39.0%) match its published returns.
+
+Bad years, strategy vs SPY: 2007 (May-Dec) −26% vs 0% (17 switches in 8 months); 2010 −9% vs
++15%; 2011 −11% vs +2%; 2015 −19% vs +1%; 2022 −34% vs −18%. Good years: 2008 −3% vs −37%;
+2013 +71% vs +32%; 2021 +61% vs +29%; 2024 +44% vs +25%.
+
+**3. Every 10-year stretch, 1928-2026 (US):** ahead in **79 of 89 (89%)**. Worst: 1998-2007, ×1.12
+against the market's ×1.85.
+
+**Information:** 100-, 150- and 250-day averages give 16.7-17.1% a year over 1928-2026 (the 200-day
+gives 17.0%), so the result doesn't hinge on 200. Their worst drops are deeper (−66% to −73%).
+
+**Verdict by the plan: confirmed.** In plain terms: in markets that trend (US, Europe, Asia,
+developed ex US), it has made far more money than buying and holding, with smaller crashes. It
+fails in markets that chop sideways (Japan; the US in 2007, 2010-11 and 2015). Since 2007 on the
+real fund it took more risk than SPY and earned less per unit of it. The extra money came from
+leverage plus dodging 2008, not from higher efficiency. It is the strongest candidate found, not
+a sure thing.
