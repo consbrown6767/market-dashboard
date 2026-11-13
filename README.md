@@ -383,6 +383,13 @@ publication by the plan's rules; 10-month trend is "safer, not better".
 equal risk, trend filter, scaled to a chosen volatility; bond returns from FRED DGS10 yields in
 `rates_daily`. Lost to SPY + T-bills at the same risk at every level, 1965-2026.
 
+### Pairs trading and macro timing (2026-11-12, both failed, not live)
+
+`collectors/pairs_model.py` (`docs/pairs/`): Gatev et al.'s pairs method on point-in-time S&P 500
+members (`shared/sp500_history.json`, prices in `daily_bars_adj`); no profit 2017-2026.
+`collectors/macro_timing.py` (`docs/macro-timing/`): Rapach-Strauss-Zhou combined macro forecast on
+Goyal's data (`gw_monthly`); worked to 2005, failed after.
+
 ### Research scripts
 
 Run by hand with `~/MarketData/.venv/bin/python research/<script>.py`. They fetch what they need and

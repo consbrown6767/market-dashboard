@@ -1,6 +1,6 @@
 # Market Dashboard: the complete reference
 
-*Last updated 2026-11-12 (risk budget model, stocks + Treasuries by equal risk, tested 1965-2026: failed; nine classic published strategies tested on 100 years: none beats the market, 10-month trend is safer; volatility-managed market model tested on 100 years of data: failed, not live; stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
+*Last updated 2026-11-12 (pairs trading and macro timing models tested: both failed; risk budget model, stocks + Treasuries by equal risk, tested 1965-2026: failed; nine classic published strategies tested on 100 years: none beats the market, 10-month trend is safer; volatility-managed market model tested on 100 years of data: failed, not live; stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
 the four prediction models, the political game machine, how it all runs, and the rules agreed along
 the way. Numbers are as of the evening of Monday 2026-11-09 unless a date says otherwise.*
 
@@ -213,8 +213,9 @@ from 2026-10-26. It can never be recovered for earlier dates.
 | `earnings_dates` | 23,791 | 2007 → announced, 500 stocks | Earnings report times, EPS estimate, reported EPS and surprise, from Yahoo Finance (`yfinance`, unofficial). Used only by the stage 4 tests (earnings week, post-earnings drift); not refreshed by any job |
 | `ff_daily` | 1,351,652 | 1926-07 → 2026-09 (US, 49 industries); 1990-07 → (4 other markets) | Kenneth French's daily returns (Dartmouth; CRSP-based, dividends in): US market minus T-bill and the T-bill, Developed ex US, Europe, Japan, Asia Pacific ex Japan, 49 value-weighted industries. Loaded by `vol_managed.py data` for the volatility-managed test; not refreshed by any job |
 | `ff_monthly` | 75,459 | 1926-07 → 2026-09 (US); 1990-07 → (4 other markets) | French's monthly value-weighted sorted portfolios: 10 momentum deciles, size × value, variance and profitability quintiles; abroad, size × momentum/value/profitability. Loaded by `classic_strategies.py data`; not refreshed by any job |
+| `gw_monthly` | 23,644 | 1871-01 → 2025-12 | Amit Goyal's monthly predictor data (Goyal & Welch): S&P level, dividends, earnings, rates, credit yields, issuance, variance, inflation, CRSP S&P returns. Loaded by `macro_timing.py data`; not refreshed by any job |
 | `stock_bars_split_adj` (view) | | | `stock_bars_daily` in today's share terms. Use it for any price series across a split (returns, drawdowns, volatility); use the raw table to match strikes |
-| `daily_bars_adj` | 16,374 | 2016 → today, 6 symbols | Split- and dividend-adjusted bars for the Spreads tab |
+| `daily_bars_adj` | 1,763,500 | 2016 → today, 749 symbols | Split- and dividend-adjusted bars: the Spreads tab's 6 symbols (refreshed by `spreads`), plus every S&P 500 member since 2015 for the pairs test (`pairs_model.py prices`, one-time) |
 | `market_gamma` | 3,904 | 2011-05-02 → 2026-11-06 | SqueezeMetrics GEX and DIX |
 | `cftc_tff` (view `cftc_net`) | 7,330 | 2010-06-15 → 2026-11-03, 9 contracts | S&P, Nasdaq-100, Dow, Russell, VIX, 2/5/10-year notes, T-bond |
 | `index_daily` | SPX 9,282; VIX 9,311; VIX3M 4,311; VIX9D 3,985 | SPX and VIX from 1990 | S&P 500 index (Yahoo) and the VIX family (Cboe), with a `source` column |
@@ -753,6 +754,18 @@ T-bills at the same risk at every level (15%: Sharpe 0.35 vs 0.46, $1.40M vs $2.
 in both rising-rate stretches. It made money in 2000-02 and 2008. Cause: since 2011, Treasuries earned
 about nothing above T-bills (Sharpe 0.03). Not live.
 
+
+### Also tested: pairs trading (2026-11-12, failed; `docs/pairs/`)
+Gatev, Goetzmann & Rouwenhorst's distance method: each month the 20 closest same-sector pairs over 12
+months, traded 6 months, open at 2 standard deviations, close when prices cross. S&P 500 members at
+the time (Wikipedia edit history, `shared/sp500_history.json`), Alpaca adjusted prices. 2017-2026:
+−0.5% a year beyond T-bills after costs, +0.2% before; only 42% of trades converged. Not live.
+
+### Also tested: macro timing (2026-11-12, failed; `docs/macro-timing/`)
+14 economic indicators (Goyal & Welch data), predictions averaged (Rapach, Strauss & Zhou), floored at
+zero, stocks held 0-1.5x by the prediction. Worked 1947-2005 (14.1% a year vs 11.9%, accuracy
+p = 0.001); failed 2006-2025 (8.7% vs 11.1%, worse than the plain average; −67% in 2008). Not live.
+
 ---
 
 ## 12. Alerts and the morning update
@@ -863,6 +876,7 @@ Use `~/MarketData/.venv/bin/python` as Python.
 | Volatility-managed test (from `collectors/`) | `vol_managed.py data` (download French's files) / `vol_managed.py backtest` |
 | Nine classic strategies (from `collectors/`) | `classic_strategies.py data` / `classic_strategies.py backtest` (needs `vol_managed.py data` first) |
 | Risk budget test (from `collectors/`) | `risk_budget.py data` / `bondcheck` / `backtest` (needs `vol_managed.py data` first) |
+| Pairs / macro tests (from `collectors/`) | `pairs_model.py members` / `prices` / `backtest`; `macro_timing.py data` / `backtest` |
 | Collector tests | `cd collectors && ~/MarketData/.venv/bin/python -m unittest test_spx_move test_ledger test_scoring test_strategy_collector test_stock_direction` |
 | Political machine (from `~/MarketData/politics`) | `run_all.py` (rebuild), `run_all.py --log` (log forecasts), `turns.py add --headline "..." --multiplier id=1.2`, `turns.py list`, `forecasts.py questions`, `forecasts.py verify`, `calibrate.py`, `python -m unittest` |
 | Restore from backup | `restore_backup.py ~/MarketData/options.db`, then `install.sh`, then `backfill_alpaca.py` |

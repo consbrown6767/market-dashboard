@@ -55,6 +55,8 @@ Fed calendar), Events (Polymarket), Status.
 - Nine classic strategies (tested 2026-11-12, none beats the market; 10-month trend is safer): 
   `collectors/classic_strategies.py`, `docs/classic-strategies/`; French monthly portfolios in `ff_monthly`.
 - Risk budget model (tested 2026-11-12, failed): `collectors/risk_budget.py`, `docs/risk-budget/`; DGS10 in `rates_daily`.
+- Pairs trading and macro timing (tested 2026-11-12, both failed): `collectors/pairs_model.py` (`docs/pairs/`;
+  point-in-time S&P 500 members `shared/sp500_history.json`), `collectors/macro_timing.py` (`docs/macro-timing/`; `gw_monthly`).
 - Failure alerts: `collectors/watchdog.py` (every 30 min) pushes to the owner's iPhone via ntfy; channel
   name in `~/.config/market-dashboard/alert.env`. Don't print or copy it. No email: owner declined. `collectors/briefing.py` sends the
   10:00 daily update on the same channel (contents chosen by the owner; see README before changing). New jobs need no watchdog change:
