@@ -370,6 +370,13 @@ results: `docs/stock-direction/README.md`. Code `collectors/stock_direction.py`,
 markets, 49 industries; table `ff_daily`, loaded by `vol_managed.py data`) and SPX. It lost to
 buy-and-hold on every pass rule. No job; rerun by hand with `vol_managed.py backtest`.
 
+### Nine classic strategies (2026-11-12, none passed, not live)
+
+`collectors/classic_strategies.py`, plan and write-up in `docs/classic-strategies/`. Trend (10- and
+12-month), Halloween, turn of the month, stock and industry momentum, low volatility, small value
+and profitability, on French data (`ff_daily`, `ff_monthly`). None beats the market after
+publication by the plan's rules; 10-month trend is "safer, not better".
+
 ### Research scripts
 
 Run by hand with `~/MarketData/.venv/bin/python research/<script>.py`. They fetch what they need and
