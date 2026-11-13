@@ -62,6 +62,8 @@ Fed calendar), Events (Polymarket), Status.
 - Trend across many markets (tested 2026-11-13, failed): `collectors/multi_trend.py`, `docs/multi-trend/`.
 - Overnight-only investing (tested 2026-11-13, failed): `collectors/overnight.py`, `docs/overnight/`.
 - Earnings-week premium (tested 2026-11-13, failed): `collectors/earnings_premium.py`, `docs/earnings-premium/`.
+- Fed-day drift and Fed cycle (tested 2026-11-13, both faded after publication): `collectors/fed_drift.py`,
+  `docs/fed-drift/`. Found: `econ_calendar` misses Fed meetings spanning two months (owner to decide on a parser fix).
 - Failure alerts: `collectors/watchdog.py` (every 30 min) pushes to the owner's iPhone via ntfy; channel
   name in `~/.config/market-dashboard/alert.env`. Don't print or copy it. No email: owner declined. `collectors/briefing.py` sends the
   10:00 daily update on the same channel (contents chosen by the owner; see README before changing). New jobs need no watchdog change:
