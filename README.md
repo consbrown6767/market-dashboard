@@ -397,6 +397,16 @@ momentum, four-factor mix, CBOE option strategies, trend-filtered near misses) a
 tested on 2026-11-12 ranked on 2006-2025 against SPY. None beats SPY by the rules; 10-month trend is
 the best risk-adjusted; leveraged trend made the most money. CBOE indices and `SP500TR` in `index_daily`.
 
+### Strategy tests of 2026-11-13 (all failed, none live)
+
+Each has a plan fixed before results and a write-up in `docs/<name>/`; no jobs, rerun by hand.
+- `collectors/multi_trend.py` (`docs/multi-trend/`): trend across five real funds (SPY, EFA, IEF, VNQ,
+  DBC as `<SYM>_ADJ` in `index_daily`), long-only and long/short, 2007-2026.
+- `collectors/overnight.py` (`docs/overnight/`): hold SPY/QQQ/IWM close to next open only; raw
+  open/close as `<SYM>_RAW` in `index_daily`, Yahoo rows in `dividends`.
+- `collectors/earnings_premium.py` (`docs/earnings-premium/`): hold S&P 500 stocks only on the 3 days
+  around earnings (`earnings_dates`, `daily_bars_adj`), 2016-2026.
+
 ### Research scripts
 
 Run by hand with `~/MarketData/.venv/bin/python research/<script>.py`. They fetch what they need and
