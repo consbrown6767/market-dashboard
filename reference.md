@@ -1,6 +1,6 @@
 # Market Dashboard: the complete reference
 
-*Last updated 2026-11-12 (nine classic published strategies tested on 100 years: none beats the market, 10-month trend is safer; volatility-managed market model tested on 100 years of data: failed, not live; stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
+*Last updated 2026-11-12 (risk budget model, stocks + Treasuries by equal risk, tested 1965-2026: failed; nine classic published strategies tested on 100 years: none beats the market, 10-month trend is safer; volatility-managed market model tested on 100 years of data: failed, not live; stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
 the four prediction models, the political game machine, how it all runs, and the rules agreed along
 the way. Numbers are as of the evening of Monday 2026-11-09 unless a date says otherwise.*
 
@@ -744,6 +744,15 @@ post-publication result has an 11% chance of being real (deflated Sharpe). **10-
 market only above its 10-month average) passed "safer, not better": since 2006, 9.7% a year vs 11.3%,
 worst drop −18% vs −50%. Not live.
 
+
+### Also tested: risk budget model (2026-11-12, failed; `docs/risk-budget/`)
+Pick a risk level (5-20% a year); stocks and 10-year Treasuries weighted by equal risk (Asness,
+Frazzini & Pedersen), each dropped in a downtrend (10-month rule), scaled to the level, up to 2x. Bond
+returns computed from FRED DGS10 yields (`rates_daily`). 1965-2026 after costs, it lost to plain SPY +
+T-bills at the same risk at every level (15%: Sharpe 0.35 vs 0.46, $1.40M vs $2.73M from $10k), and
+in both rising-rate stretches. It made money in 2000-02 and 2008. Cause: since 2011, Treasuries earned
+about nothing above T-bills (Sharpe 0.03). Not live.
+
 ---
 
 ## 12. Alerts and the morning update
@@ -853,6 +862,7 @@ Use `~/MarketData/.venv/bin/python` as Python.
 | Stock direction model (from `collectors/`) | `stock_direction.py live --dry-run 2026-11-10` (what it would predict, logs nothing) / `explore` / `tune` / `signals` / `iv SYMBOL` / `earnings SYMBOL`; add `--universe sp400` (before the command) for the other 400 |
 | Volatility-managed test (from `collectors/`) | `vol_managed.py data` (download French's files) / `vol_managed.py backtest` |
 | Nine classic strategies (from `collectors/`) | `classic_strategies.py data` / `classic_strategies.py backtest` (needs `vol_managed.py data` first) |
+| Risk budget test (from `collectors/`) | `risk_budget.py data` / `bondcheck` / `backtest` (needs `vol_managed.py data` first) |
 | Collector tests | `cd collectors && ~/MarketData/.venv/bin/python -m unittest test_spx_move test_ledger test_scoring test_strategy_collector test_stock_direction` |
 | Political machine (from `~/MarketData/politics`) | `run_all.py` (rebuild), `run_all.py --log` (log forecasts), `turns.py add --headline "..." --multiplier id=1.2`, `turns.py list`, `forecasts.py questions`, `forecasts.py verify`, `calibrate.py`, `python -m unittest` |
 | Restore from backup | `restore_backup.py ~/MarketData/options.db`, then `install.sh`, then `backfill_alpaca.py` |

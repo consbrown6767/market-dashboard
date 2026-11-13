@@ -377,6 +377,12 @@ buy-and-hold on every pass rule. No job; rerun by hand with `vol_managed.py back
 and profitability, on French data (`ff_daily`, `ff_monthly`). None beats the market after
 publication by the plan's rules; 10-month trend is "safer, not better".
 
+### Risk budget model (2026-11-12, failed, not live)
+
+`collectors/risk_budget.py`, plan and write-up in `docs/risk-budget/`. Stocks + 10-year Treasuries by
+equal risk, trend filter, scaled to a chosen volatility; bond returns from FRED DGS10 yields in
+`rates_daily`. Lost to SPY + T-bills at the same risk at every level, 1965-2026.
+
 ### Research scripts
 
 Run by hand with `~/MarketData/.venv/bin/python research/<script>.py`. They fetch what they need and
