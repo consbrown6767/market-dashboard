@@ -64,6 +64,9 @@ Fed calendar), Events (Polymarket), Status.
 - Earnings-week premium (tested 2026-11-13, failed): `collectors/earnings_premium.py`, `docs/earnings-premium/`.
 - Fed-day drift and Fed cycle (tested 2026-11-13, both faded after publication): `collectors/fed_drift.py`,
   `docs/fed-drift/`. Found and fixed (2026-11-13, owner's OK): the Fed parser skipped meetings spanning two months.
+- Live paper record (from 2026-11-13, owner's OK): `collectors/paper_record.py` (job `paper`, weekdays 09:10/16:40/20:40),
+  plan `docs/paper-record/PLAN.md`; tables `paper_positions`/`paper_marks` (hash-chained: never edit) and `paper_skips`;
+  Scorecard panel `sc-paper`. Leveraged trend, 10-month trend, pre-Fed drift vs SPY; a rule change is a new version.
 - Constant leverage (tested 2026-11-13, 2x fails safety rules; savers at 2x won every cohort): `collectors/constant_leverage.py`,
   `docs/constant-leverage/`.
 - Failure alerts: `collectors/watchdog.py` (every 30 min) pushes to the owner's iPhone via ntfy; channel

@@ -187,9 +187,66 @@
     c.timeScale().fitContent();
   }
 
+  // ---------- live paper record of three trading rules (collectors/paper_record.py)
+  const money = (x) => (isNum(x) ? `$${Math.round(x).toLocaleString("en-US")}` : "–");
+  const HOLD_NAMES = { SSO: "SSO (2x S&P 500)", SPY: "SPY", cash: "Cash (T-bills)" };
+
+  function drawPaper(d) {
+    const p = d.paper;
+    const badge = $("#sc-paper-badge");
+    if (!p?.ready || !p.strategies.length) {
+      $("#sc-paper-facts").innerHTML = `<div class="empty" style="padding:16px">Not started yet. The job runs weekdays at 9:10 am, 4:40 pm and 8:40 pm.</div>`;
+      $("#sc-paper-legend").innerHTML = ""; $("#sc-paper-chart").innerHTML = "";
+      badge.className = "badge"; badge.textContent = "Not started";
+      return;
+    }
+    const v = p.verify;
+    badge.className = `badge ${v.ok ? "fresh" : "down"}`;
+    badge.title = v.problems.join("\n");
+    badge.textContent = v.ok ? `Chained · check ok · ${v.positions} positions` : "Chain check FAILED";
+    const verdictBadge = (e) => e.verdict === "too early" ? `<span class="badge">Too early to judge</span>`
+      : `<span class="badge ${e.verdict.startsWith("beats") ? "fresh" : "down"}">${esc(e.verdict)}</span>`;
+    const holding = (e) => {
+      const lp = e.latest_position;
+      if (!lp) return `<span class="dim">–</span>`;
+      if (e.kind === "fed") return `Window: ${esc(day(lp.buy_at))} 2 pm to ${esc(day(lp.decision_day))} 2 pm`;
+      return `${esc(HOLD_NAMES[lp.hold] || lp.hold)} <span class="dim">from the ${esc(day(lp.trade_date))} close (decided ${etTime(lp.decided_at)})</span>`;
+    };
+    const rowsHtml = p.strategies.map((e) => {
+      const skips = e.skips.length
+        ? ` <span class="badge stale" title="${esc(e.skips.map((s) => `${s.signal_date}: ${s.reason}`).join("\n"))}">${e.skips.length} skipped</span>` : "";
+      let res;
+      if (e.kind === "fed") {
+        res = e.meetings
+          ? `${e.meetings} meeting${e.meetings > 1 ? "s" : ""}: avg ${signed(e.avg_window * 100, 2)} per window <span class="dim">vs SPY's avg day ${signed(isNum(e.avg_spy_day) ? e.avg_spy_day * 100 : null, 3)}</span>`
+          : `<span class="dim">No meeting finished yet</span>`;
+      } else {
+        res = e.marks ? `${money(e.rule_10k)} <span class="dim">vs SPY ${money(e.spy_10k)} · since ${esc(day(e.first_day))}</span>`
+          : `<span class="dim">Starts at its first close</span>`;
+      }
+      return `<tr><td><b>${esc(e.name)}</b> <span class="dim">v${esc(e.version)}</span>${skips}<br><span class="dim">${esc(e.what)}</span></td>
+        <td>${res}</td><td>${holding(e)}</td><td>${verdictBadge(e)}</td></tr>`;
+    });
+    $("#sc-paper-facts").innerHTML = `<table><thead><tr><th>Rule</th><th>$10k so far</th><th>Holding now</th><th>Verdict</th></tr></thead><tbody>${rowsHtml.join("")}</tbody></table>`;
+    const lt = p.strategies.find((e) => e.strategy === "lev-trend"), t10 = p.strategies.find((e) => e.strategy === "trend10");
+    $("#sc-paper-asof").textContent = lt?.last_day ? `marked to ${day(lt.last_day)}` : "";
+    $("#sc-paper-legend").innerHTML = `<span><i style="background:var(--series-1)"></i>Leveraged trend</span><span><i style="background:var(--series-2)"></i>10-month trend</span>
+      <span><i style="background:var(--text-dim)"></i>SPY</span><span class="dim">$10,000 from the record's first close</span>`;
+    const host = $("#sc-paper-chart");
+    if (!lt?.curve?.length) { host.innerHTML = `<div class="empty" style="padding:16px">The chart starts after the first marked day.</div>`; return; }
+    const c = makeChart(host, { rightPriceScale: { borderColor: css("--border") } });
+    const usd = { type: "custom", formatter: (x) => `$${Math.round(x).toLocaleString("en-US")}` };
+    const series = (pts, key, color) => c.addLineSeries({ color, lineWidth: 2, priceFormat: usd, priceLineVisible: false, lastValueVisible: true })
+      .setData(pts.map((x) => ({ time: x.date, value: x[key] })));
+    series(lt.curve, "spy", css("--text-dim"));
+    if (t10?.curve?.length) series(t10.curve, "rule", css("--series-2"));
+    series(lt.curve, "rule", css("--series-1"));
+    c.timeScale().fitContent();
+  }
+
   loaders.scorecard = async () => {
     const d = await api("/api/scorecard");
-    drawSummary(d); drawSpx(d); drawCalibration(d); drawRecent(d);
+    drawSummary(d); drawSpx(d); drawPaper(d); drawCalibration(d); drawRecent(d);
     $("#sc-asof").textContent = `updated ${etTime(new Date().toISOString())}`;
   };
 })();

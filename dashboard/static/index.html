@@ -312,6 +312,13 @@
             <div class="spx-chart-col"><div class="legend spx-legend" id="sc-spx-legend"></div><div class="chart-frame"><div class="chart" id="sc-spx-chart"></div></div></div></div></div>
           <div class="panel-foot">Made each evening from values fixed at the close (S&amp;P range and gap, VIX, the previous day's dealer gamma, whether it fell, and tomorrow's Fed, CPI or jobs news). Chart: the last 120 predictions, live where they exist and backtest before that.</div>
         </div>
+        <div class="panel col-all tall" data-panel="sc-paper">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Live paper record · trading rules</span><span class="dim" id="sc-paper-asof"></span></div>
+            <span class="badge" id="sc-paper-badge">–</span></div>
+          <div class="panel-content flush chart-host"><div class="paper-wrap"><div class="paper-table" id="sc-paper-facts"></div>
+            <div class="paper-chart-col"><div class="legend spx-legend" id="sc-paper-legend"></div><div class="chart-frame"><div class="chart" id="sc-paper-chart"></div></div></div></div></div>
+          <div class="panel-foot">Nothing is traded. Each position is written down before it takes effect (trend rules trade at the next day's close; the Fed rule buys at 2 pm the day before a decision and sells at 2 pm on it), never edited, and chained. Judged against SPY: no verdict before 3 years for the trend rules or 30 meetings for the Fed rule. Plan: docs/paper-record/PLAN.md.</div>
+        </div>
         <div class="panel col-2 compact" data-panel="sc-calibration">
           <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Ranges vs reality</span></div><span class="note">Range models only</span></div>
           <div class="panel-content flush" id="sc-calibration"></div>

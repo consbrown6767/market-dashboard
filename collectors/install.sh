@@ -24,6 +24,8 @@
 #               calendar, resolve yesterday's prediction, predict the next trading day (later runs only retry)
 #   direction   Mon-Fri 18:40   stock direction model: resolve last week's predictions; on a week's last trading
 #               day (normally Tuesday) download the S&P 500 stocks' options (~1 hour) and predict next week
+#   paper       Mon-Fri 09:10, 16:40, 20:40   live paper record (leveraged trend, 10-month trend, pre-Fed drift):
+#               log positions before they take effect, mark finished days; 09:10 catches up a missed evening
 #   dashboard   always on (restarts if it stops)   http://127.0.0.1:8765
 #
 # Uninstall: ./install.sh uninstall
@@ -34,7 +36,7 @@ PROJECT=${HERE:h}
 DATA=~/MarketData
 AGENTS=~/Library/LaunchAgents
 PREFIX=com.marketdashboard.options
-JOBS=(daily bars snapshot backup positioning spreads events watchdog briefing strategy politics spxmove direction news shipping dashboard)
+JOBS=(daily bars snapshot backup positioning spreads events watchdog briefing strategy politics spxmove direction news shipping paper dashboard)
 
 for job in $JOBS; do
   launchctl bootout gui/$UID/$PREFIX.$job 2>/dev/null || true
@@ -48,7 +50,7 @@ $DATA/.venv/bin/python -c "import truststore, yfinance, bs4, lxml" 2>/dev/null |
 cp $HERE/options_collector.py $HERE/positioning_collector.py $HERE/backfill_alpaca.py $HERE/restore_backup.py \
    $HERE/spreads_collector.py $HERE/events_collector.py $HERE/watchdog.py $HERE/briefing.py \
    $HERE/scoring.py $HERE/strategy_collector.py $HERE/politics_job.py $HERE/ledger.py $HERE/spx_move.py \
-   $HERE/news_collector.py $HERE/shipping_collector.py $HERE/stock_direction.py $DATA/app/
+   $HERE/news_collector.py $HERE/shipping_collector.py $HERE/stock_direction.py $HERE/paper_record.py $DATA/app/
 cp $HERE/../shared/watchlist.json $HERE/../shared/strategy.json $HERE/../shared/release_dates.json $HERE/../shared/news_feeds.json $HERE/../shared/source_ratings.json \
    $HERE/../shared/sp100.json $HERE/../shared/stock_direction_live.json $DATA/app/
 mkdir -p $DATA/politics/data $DATA/politics/outputs $DATA/politics/kalshi
@@ -78,6 +80,7 @@ schedules = {  # job -> (script path, arguments, launchd calendar entries or Non
     "direction": (f"{data}/app/stock_direction.py", ["live"], weekdays((18, 40))),
     "news": (f"{data}/app/news_collector.py", [], [{"Minute": m} for m in (2, 17, 32, 47)]),
     "shipping": (f"{data}/app/shipping_collector.py", [], [{"Hour": 9, "Minute": 40}, {"Hour": 19, "Minute": 40}]),
+    "paper": (f"{data}/app/paper_record.py", [], weekdays((9, 10), (16, 40), (20, 40))),
     "dashboard": (f"{project}/dashboard/server.py", [], None),
 }
 for job, (script, args, cal) in schedules.items():

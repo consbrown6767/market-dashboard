@@ -1,6 +1,6 @@
 # Market Dashboard: the complete reference
 
-*Last updated 2026-11-13 (Fed calendar parser fixed and history reloaded; constant leverage tested: 2x more money but −98.7% in 1929-32, fails; monthly savers at 2x ahead in all 60 cohorts; Fed-day drift and Fed cycle tested: both faded after publication, Fed calendar gap found; earnings-week premium tested: failed; overnight-only investing and trend across many markets tested: both failed; round 4 and tournament of all 24 strategies: none beats SPY by the rules; 10-month trend safest, leveraged trend most money; pairs trading and macro timing models tested: both failed; risk budget model, stocks + Treasuries by equal risk, tested 1965-2026: failed; nine classic published strategies tested on 100 years: none beats the market, 10-month trend is safer; volatility-managed market model tested on 100 years of data: failed, not live; stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
+*Last updated 2026-11-13 (live paper record started: leveraged trend, 10-month trend, pre-Fed drift; Fed calendar parser fixed and history reloaded; constant leverage tested: 2x more money but −98.7% in 1929-32, fails; monthly savers at 2x ahead in all 60 cohorts; Fed-day drift and Fed cycle tested: both faded after publication, Fed calendar gap found; earnings-week premium tested: failed; overnight-only investing and trend across many markets tested: both failed; round 4 and tournament of all 24 strategies: none beats SPY by the rules; 10-month trend safest, leveraged trend most money; pairs trading and macro timing models tested: both failed; risk budget model, stocks + Treasuries by equal risk, tested 1965-2026: failed; nine classic published strategies tested on 100 years: none beats the market, 10-month trend is safer; volatility-managed market model tested on 100 years of data: failed, not live; stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
 the four prediction models, the political game machine, how it all runs, and the rules agreed along
 the way. Numbers are as of the evening of Monday 2026-11-09 unless a date says otherwise.*
 
@@ -102,7 +102,7 @@ and no NVDA/AMD bars are stored for the Spreads tab. It may have been removed wi
 
 ### The jobs (all times Eastern, Mac local time)
 
-Sixteen launchd agents, all named `com.marketdashboard.options.*`, created by `collectors/install.sh`.
+Seventeen launchd agents, all named `com.marketdashboard.options.*`, created by `collectors/install.sh`.
 
 | Job | When | Does |
 |---|---|---|
@@ -114,6 +114,7 @@ Sixteen launchd agents, all named `com.marketdashboard.options.*`, created by `c
 | `strategy` | Every 5 min, 09:25–16:30, Mon–Fri | Gamma breakout tracker |
 | `spxmove` | 16:50, 18:20, 20:50 and 08:05, Mon–Fri | S&P move-size model: refresh data, resolve yesterday, predict tomorrow (only once) |
 | `direction` | 18:40 Mon–Fri | Stock direction model: resolve predictions whose week has closed; on a week's last trading day (normally Tuesday), download the S&P 500 stocks' options (about an hour), recompute implied volatility, predict next week (`stock_direction.py live`) |
+| `paper` | 09:10, 16:40, 20:40, Mon–Fri | Live paper record (`paper_record.py`): log the trend rules' positions before the next day's close and the pre-Fed window days ahead; mark finished days against SPY. 09:10 catches up a missed evening |
 | `events` | Hourly at :05, every day | Polymarket events |
 | `politics` | Hourly at :25, every day (past prices at 02:25) | Political machine: prices, headlines, rebuild |
 | `news` | Every 15 min (:02, :17, :32, :47), every day | Headlines from ~80 sources, grouped into stories (`news_collector.py`) |
@@ -142,7 +143,7 @@ panels stack. Charts are TradingView Lightweight Charts 4.2.0, stored locally.
 | **Spreads** | Relative-value pairs: ratio with 50/200-day averages, z-score, 1-year percentile, returns per leg. "Any pair" lets you type two tickers; **Save** adds it to `pairs.json` |
 | **Gamma** | The breakout tracker: each stock's call wall, put wall and gamma flip, a 5-minute chart with those levels, breakouts in their 30-minute hold, every breakout logged with its grades, and a scorecard. Live and replay kept apart |
 | **Politics** | The political game machine in seven sections: Overview, Play the game, President, Senate and House, Strategy, Ratings, Scorecard |
-| **Scorecard** | Every model's record against its simple guess, with a verdict and a tamper check. The S&P model's range for the next trading day, its inputs, the next scheduled Fed/CPI/jobs news, and its last 120 ranges against what happened. Whether 90% ranges really catch 90% |
+| **Scorecard** | Every model's record against its simple guess, with a verdict and a tamper check. The S&P model's range for the next trading day, its inputs, the next scheduled Fed/CPI/jobs news, and its last 120 ranges against what happened. Whether 90% ranges really catch 90%. The live paper record of three trading rules ($10k vs SPY, holdings, chain check) |
 | **News** | Top stories (headlines grouped by event, ranked by how many outlets carry them, weighted by each outlet's rating) with a trust badge (High/Medium/Low/Official: how well sourced, not whether true), each headline showing its outlet's 0-100 rating (from Media Bias/Fact Check and Ad Fontes; `shared/source_ratings.json`), latest headlines with topic filters (Fed and rates, economy, markets, business, tech and AI, energy, shipping, Russia and Ukraine, Middle East, China, US politics, world, crypto) and a search over every stored headline. Shipping chokepoints (last 7 days vs normal and a year ago, tankers, 6-month sparkline, full history chart). Hormuz, Bab el-Mandeb and the Kerch Strait are shown as "≥" (at least): many ships there turn trackers off, so the true number is higher. No estimate is added, because no free data can measure the dark ships. Fed and data calendar with Polymarket's odds for the next decision and the latest Fed statements. Feed health |
 | **Events** | Polymarket by group (macro and Fed, geopolitics, business and tech, politics, crypto, sports and other), 24-hour movers, what resolves this week, every event with its price history |
 | **Status** | Every job's last run, status and detail |
@@ -231,6 +232,7 @@ from 2026-10-26. It can never be recovered for earlier dates.
 | `strategy_grades` | 69 | Each event checked at the close, next close, and three closes later |
 | `strategy_state` | 14 | Each stock's live state (holding, volume ratio) |
 | `strategy_bars_5m` | 63,960 | 5-minute bars since 2026-09-14 (for the volume baseline). Not backed up |
+| `paper_positions` / `paper_marks` / `paper_skips` | from 2026-11-13 | Live paper record: positions written before they take effect (hash-chained), daily or per-meeting results next to SPY (hash-chained), signals missed because the job didn't run |
 | `predictions` / `prediction_outcomes` | 93,541 / 93,540 (2026-11-12) | The prediction ledger: S&P model backtest and live; stock direction backtests (S&P 100: 1, 1-learned, 2, 3-skew, 4-os, 4-earn, 4-pead, 4-rvi, 4-max, 5-research; the 400: the same names with `@sp400`, minus 2) |
 
 Small housekeeping tables: `alpaca_contracts` (one day only, then dropped as stale), `backfill_progress`.
@@ -814,6 +816,13 @@ Always 2x the US market, 1927-2026: 12.4% a year vs 10.2% (best fixed level in h
 year). Monthly savers (Ayres & Nalebuff) at 2x beat 1x in all 60 forty-year cohorts. The 200-day rule (leveraged
 trend) cut 2x's worst drop to −56%. Real UPRO 3x 2009-2026: 32% a year, −63% drop. Not live.
 
+### Live paper record (from 2026-11-13; `docs/paper-record/`)
+Nothing traded. Three rules, version 1, fixed in `docs/paper-record/PLAN.md`: **leveraged trend** (SSO while SPY > its
+200-day average, else T-bills, traded at the next close), **10-month trend** (SPY while above its 10-month-end average,
+checked each month-end), **pre-Fed drift** (SPY from 2 pm the day before each Fed decision to 2 pm on it). Positions
+are logged before they take effect and hash-chained; marks next to SPY. No verdict before 3 years (trend rules) or 30
+meetings (Fed). First positions: SSO and SPY from the 2026-11-13 close; first Fed window 2026-12-08/09.
+
 ## 12. Alerts and the morning update
 
 Both go to your iPhone through **ntfy** (free, no account, no access to email or Apple ID). The channel
@@ -929,7 +938,8 @@ Use `~/MarketData/.venv/bin/python` as Python.
 | Earnings-week test (from `collectors/`) | `earnings_premium.py backtest` |
 | Fed-drift test (from `collectors/`) | `fed_drift.py backtest` |
 | Leverage test (from `collectors/`) | `constant_leverage.py data` / `constant_leverage.py backtest` |
-| Collector tests | `cd collectors && ~/MarketData/.venv/bin/python -m unittest test_spx_move test_ledger test_scoring test_strategy_collector test_stock_direction` |
+| Paper record (from `~/MarketData/app/`) | `paper_record.py status` / `paper_record.py verify` |
+| Collector tests | `cd collectors && ~/MarketData/.venv/bin/python -m unittest test_spx_move test_ledger test_scoring test_strategy_collector test_stock_direction test_paper_record` |
 | Political machine (from `~/MarketData/politics`) | `run_all.py` (rebuild), `run_all.py --log` (log forecasts), `turns.py add --headline "..." --multiplier id=1.2`, `turns.py list`, `forecasts.py questions`, `forecasts.py verify`, `calibrate.py`, `python -m unittest` |
 | Restore from backup | `restore_backup.py ~/MarketData/options.db`, then `install.sh`, then `backfill_alpaca.py` |
 | News: read every source now / reload shipping history | `.../app/news_collector.py all` / `.../app/shipping_collector.py backfill` |

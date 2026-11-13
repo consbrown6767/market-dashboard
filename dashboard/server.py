@@ -29,6 +29,7 @@ sys.path.insert(0, str(Path.home() / "MarketData" / "app"))  # reuse the collect
 from options_collector import (ALPACA_DATA, OCC_SERIES_URL, alpaca, http_get, load_keys,  # noqa: E402
                                parse_occ, parse_option_symbol)
 import ledger  # noqa: E402  (only its read-only scoring and checking parts are used here)
+import paper_record  # noqa: E402  (only its read-only summary and checking parts are used here)
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import long_history  # noqa: E402  (Yahoo history before 2016 for the Spreads tab)
 
@@ -729,6 +730,7 @@ def api_scorecard(q):
         if table_exists(conn, "predictions"):
             out["ledger"] = {"models": ledger.summary(conn), "recent": ledger.recent(conn, 60), "verify": ledger.verify(conn)}
         out["spx"] = _spx_record(conn)
+        out["paper"] = paper_record.summary(conn)
     return out
 
 

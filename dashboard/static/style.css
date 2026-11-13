@@ -237,6 +237,11 @@ td.wrap { white-space: normal; text-align: left; min-width: 160px; max-width: 32
 .spx-facts .stat strong { font-size: 14px; }
 .spx-chart-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .spx-legend { padding: 6px 10px; flex-wrap: wrap; }
+.paper-wrap { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.paper-table { flex: none; overflow: auto; border-bottom: 1px solid var(--border); }
+.paper-table table { width: 100%; }
+.paper-table td { white-space: normal; text-align: left; vertical-align: top; }
+.paper-chart-col { flex: 1; display: flex; flex-direction: column; min-height: 160px; }
 @media (max-width: 900px) {
   .panel[data-panel="sc-spx"] { --h: 820px; }
   .spx-wrap { flex-direction: column; }
