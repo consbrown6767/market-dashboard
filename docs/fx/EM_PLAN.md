@@ -62,4 +62,6 @@ live testing). It's reported with its crashes and its bootstrap range.
 
 ## Changes
 
-(none yet)
+- 2026-11-13, before the sandbox was run (only a data check had been done): Yahoo's rupiah shows +16.7% in
+  2013-11 and −20.8% in 2013-12, a bad price (the real move was a few percent). For Yahoo series only, days more
+  than 8% away from the median of the surrounding 11 days are dropped before taking month-end values.
