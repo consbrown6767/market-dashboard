@@ -1,6 +1,6 @@
 # Market Dashboard: the complete reference
 
-*Last updated 2026-11-13 (global bond strategies: 8 versions, one finalist, fails its vault; currency strategies, G10 and emerging markets: 20 versions, all six finalists fail their vaults; VRP confirmation: not confirmed, fails all three tests; math exploration: 15 versions of 8 methods, 2006-2026 held out; only the variance risk premium passed, weakly; live paper record started: leveraged trend, 10-month trend, pre-Fed drift; Fed calendar parser fixed and history reloaded; constant leverage tested: 2x more money but −98.7% in 1929-32, fails; monthly savers at 2x ahead in all 60 cohorts; Fed-day drift and Fed cycle tested: both faded after publication, Fed calendar gap found; earnings-week premium tested: failed; overnight-only investing and trend across many markets tested: both failed; round 4 and tournament of all 24 strategies: none beats SPY by the rules; 10-month trend safest, leveraged trend most money; pairs trading and macro timing models tested: both failed; risk budget model, stocks + Treasuries by equal risk, tested 1965-2026: failed; nine classic published strategies tested on 100 years: none beats the market, 10-month trend is safer; volatility-managed market model tested on 100 years of data: failed, not live; stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
+*Last updated 2026-11-13 (country stock-market rotation: 8 versions, both finalists fail; global bond strategies: 8 versions, one finalist, fails its vault; currency strategies, G10 and emerging markets: 20 versions, all six finalists fail their vaults; VRP confirmation: not confirmed, fails all three tests; math exploration: 15 versions of 8 methods, 2006-2026 held out; only the variance risk premium passed, weakly; live paper record started: leveraged trend, 10-month trend, pre-Fed drift; Fed calendar parser fixed and history reloaded; constant leverage tested: 2x more money but −98.7% in 1929-32, fails; monthly savers at 2x ahead in all 60 cohorts; Fed-day drift and Fed cycle tested: both faded after publication, Fed calendar gap found; earnings-week premium tested: failed; overnight-only investing and trend across many markets tested: both failed; round 4 and tournament of all 24 strategies: none beats SPY by the rules; 10-month trend safest, leveraged trend most money; pairs trading and macro timing models tested: both failed; risk budget model, stocks + Treasuries by equal risk, tested 1965-2026: failed; nine classic published strategies tested on 100 years: none beats the market, 10-month trend is safer; volatility-managed market model tested on 100 years of data: failed, not live; stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
 the four prediction models, the political game machine, how it all runs, and the rules agreed along
 the way. Numbers are as of the evening of Monday 2026-11-09 unless a date says otherwise.*
 
@@ -840,6 +840,12 @@ failed in the 2014-2026 vault: more money than SPY at best, never a better Sharp
 yield level, Taylor rule; sandbox 1980-2005 weak (best corrected Sharpe 0.45). The one finalist (global duration timing)
 lost money in 2016-2026 (−12% in 2022). Not live.
 
+### Also tested: country stock-market rotation (2026-11-13, failed; `docs/countries/`)
+22 iShares country funds plus SPY (`countries.py`; `<T>_ADJ`/`<T>_RAW` in `index_daily`, SPY_ADJ reloaded from 1993).
+Momentum, reversal, dividend-yield value, low volatility, value + momentum, trend, filtered momentum; sandbox 1997-2010,
+vault 2011-2026. Finalists trend across countries (4.4% a year vs SPY 14.0%) and filtered momentum (−2.9% a year) both
+failed beyond luck. Not live.
+
 ### Live paper record (from 2026-11-13; `docs/paper-record/`)
 Nothing traded. Three rules, version 1, fixed in `docs/paper-record/PLAN.md`: **leveraged trend** (SSO while SPY > its
 200-day average, else T-bills, traded at the next close), **10-month trend** (SPY while above its 10-month-end average,
@@ -963,6 +969,7 @@ Use `~/MarketData/.venv/bin/python` as Python.
 | Fed-drift test (from `collectors/`) | `fed_drift.py backtest` |
 | Leverage test (from `collectors/`) | `constant_leverage.py data` / `constant_leverage.py backtest` |
 | Math exploration (from `collectors/`) | `exploration.py explore` (sandbox only) / `exploration.py holdout` (needs committed `FINALISTS.md`) |
+| Country research (from `collectors/`) | `countries.py data/explore/holdout` |
 | Bond research (from `collectors/`) | `bonds.py data/explore/holdout` (vault needs committed `docs/bonds/FINALISTS.md`) |
 | FX research (from `collectors/`) | `fx_research.py data/explore/holdout`, `fx_em.py data/explore/holdout` (vaults need committed finalists) |
 | VRP confirmation (from `collectors/`) | `vrp_confirm.py data` / `vrp_confirm.py backtest` |

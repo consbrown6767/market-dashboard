@@ -415,6 +415,7 @@ Each has a plan fixed before results and a write-up in `docs/<name>/`; no jobs, 
 - `collectors/fx_research.py` and `collectors/fx_em.py` (`docs/fx/`): currency strategies from international monetary
   theory, G10 (vault 2006-2026) and 13 emerging markets (vault 2014-2026), all finalists failed. New table `macro_series`.
 - `collectors/bonds.py` (`docs/bonds/`): 8 global government bond strategies (10 countries, hedged), vault 2006-2026, failed.
+- `collectors/countries.py` (`docs/countries/`): rotation among 22 iShares country funds plus SPY, vault 2011-2026, failed.
 - **Live paper record** (from 2026-11-13, not a test): `collectors/paper_record.py`, job `paper` (weekdays 09:10,
   16:40, 20:40), plan `docs/paper-record/PLAN.md`. Leveraged trend, 10-month trend and pre-Fed drift, each position
   written before it takes effect into `paper_positions` and scored daily against SPY in `paper_marks` (both
