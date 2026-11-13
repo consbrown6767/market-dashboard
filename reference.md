@@ -1,6 +1,6 @@
 # Market Dashboard: the complete reference
 
-*Last updated 2026-11-13 (Fed-day drift and Fed cycle tested: both faded after publication, Fed calendar gap found; earnings-week premium tested: failed; overnight-only investing and trend across many markets tested: both failed; round 4 and tournament of all 24 strategies: none beats SPY by the rules; 10-month trend safest, leveraged trend most money; pairs trading and macro timing models tested: both failed; risk budget model, stocks + Treasuries by equal risk, tested 1965-2026: failed; nine classic published strategies tested on 100 years: none beats the market, 10-month trend is safer; volatility-managed market model tested on 100 years of data: failed, not live; stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
+*Last updated 2026-11-13 (constant leverage tested: 2x more money but −98.7% in 1929-32, fails; monthly savers at 2x ahead in all 60 cohorts; Fed-day drift and Fed cycle tested: both faded after publication, Fed calendar gap found; earnings-week premium tested: failed; overnight-only investing and trend across many markets tested: both failed; round 4 and tournament of all 24 strategies: none beats SPY by the rules; 10-month trend safest, leveraged trend most money; pairs trading and macro timing models tested: both failed; risk budget model, stocks + Treasuries by equal risk, tested 1965-2026: failed; nine classic published strategies tested on 100 years: none beats the market, 10-month trend is safer; volatility-managed market model tested on 100 years of data: failed, not live; stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
 the four prediction models, the political game machine, how it all runs, and the rules agreed along
 the way. Numbers are as of the evening of Monday 2026-11-09 unless a date says otherwise.*
 
@@ -807,6 +807,12 @@ on 2 pm-to-2 pm intraday windows: +0.20% per meeting 2016-2026 (t 2.9; informati
 need the owner's OK). **Found:** `econ_calendar` misses 5 Fed meetings that spanned two months (parser in
 `spx_move.py` doesn't read "April/May 30-1"); fixed in the test's code only, owner to decide on the parser. Not live.
 
+### Also tested: constant leverage (2026-11-13, 2x fails the safety rules; `docs/constant-leverage/`)
+Always 2x the US market, 1927-2026: 12.4% a year vs 10.2% (best fixed level in hindsight; above it, less money), but
+−98.7% in 1929-32 and ahead in only 72% of 20-year stretches (rule: 80%). Model matches real SSO (16.0% vs 15.5% a
+year). Monthly savers (Ayres & Nalebuff) at 2x beat 1x in all 60 forty-year cohorts. The 200-day rule (leveraged
+trend) cut 2x's worst drop to −56%. Real UPRO 3x 2009-2026: 32% a year, −63% drop. Not live.
+
 ## 12. Alerts and the morning update
 
 Both go to your iPhone through **ntfy** (free, no account, no access to email or Apple ID). The channel
@@ -921,6 +927,7 @@ Use `~/MarketData/.venv/bin/python` as Python.
 | Overnight test (from `collectors/`) | `overnight.py data` / `overnight.py backtest` |
 | Earnings-week test (from `collectors/`) | `earnings_premium.py backtest` |
 | Fed-drift test (from `collectors/`) | `fed_drift.py backtest` |
+| Leverage test (from `collectors/`) | `constant_leverage.py data` / `constant_leverage.py backtest` |
 | Collector tests | `cd collectors && ~/MarketData/.venv/bin/python -m unittest test_spx_move test_ledger test_scoring test_strategy_collector test_stock_direction` |
 | Political machine (from `~/MarketData/politics`) | `run_all.py` (rebuild), `run_all.py --log` (log forecasts), `turns.py add --headline "..." --multiplier id=1.2`, `turns.py list`, `forecasts.py questions`, `forecasts.py verify`, `calibrate.py`, `python -m unittest` |
 | Restore from backup | `restore_backup.py ~/MarketData/options.db`, then `install.sh`, then `backfill_alpaca.py` |
