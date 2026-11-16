@@ -852,6 +852,12 @@ def api_shipping(q):
 # ---------- today and research tabs (plain summaries of records the other tabs already hold; decide nothing)
 
 RESEARCH_PATH = PROJECT / "shared" / "research.json"
+# Today tab filters: stories must carry a market-relevant topic; betting markets drop novelty bets
+# (tweet counts, press-office timing, "mention" markets) that move a lot but say nothing about markets.
+MARKET_TOPICS = ("fed", "economy", "markets", "business", "tech", "energy", "shipping", "ukraine", "middle_east", "china", "politics")
+NOISE = re.compile(r"tweets?|full lid|\bsay\b|mention|post on truth|wear|announcer|weather|temperature|mayor|arena|divorce|press secretary", re.I)
+# Stories the topic tagger files under markets or politics that aren't (films, celebrities, crime trials).
+STORY_NOISE = re.compile(r"james bond|box office|film|movie|actor|actress|celebrity|retrial|murder|sentenced|trial of|grammy|oscar", re.I)
 HOLD_NAMES = {"SSO": "SSO (2x S&P 500)", "SPY": "SPY", "cash": "cash (T-bills)"}
 BAD_RUN = ("failed", "partial", "stopped")
 
@@ -987,7 +993,7 @@ def _priced_in() -> dict:
     ev = api_events({})
     markets = [{"title": e["title"], "grp": e["grp"], "url": e["url"], "volume_24h": e["volume_24h"], "end_date": e["end_date"],
                 "top": [{"label": m["label"] or m["question"], "price": m["price"], "change_1d": m["change_1d"]} for m in e["markets"][:2]]}
-               for e in ev["events"] if e["grp"] in ("macro", "politics", "geopolitics")][:8]
+               for e in ev["events"] if e["grp"] in ("macro", "politics", "geopolitics") and not NOISE.search(e["title"])][:8]
     return {"spy_price": d.get("price"), "moves": picks, "snapshot_ts": d.get("snapshot_ts"), "markets": markets,
             "markets_asof": ev["fetched_at"]}
 
@@ -1006,17 +1012,20 @@ def _today() -> dict:
         tests = _live_tests(conn)
         stories = rows(conn, """SELECT id, title, link, first_published, n_sources, topics, alert, trust, trust_label, trust_why
                                 FROM news_stories WHERE first_published >= ? AND (trust >= 70 OR trust_label = 'Official')
-                                ORDER BY importance DESC, last_seen DESC LIMIT 10""", since) if table_exists(conn, "news_stories") else []
+                                AND (topics LIKE '%,fed,%' OR topics LIKE '%,economy,%' OR topics LIKE '%,markets,%' OR topics LIKE '%,business,%' OR topics LIKE '%,tech,%' OR topics LIKE '%,energy,%' OR topics LIKE '%,shipping,%' OR topics LIKE '%,ukraine,%' OR topics LIKE '%,middle_east,%' OR topics LIKE '%,china,%' OR topics LIKE '%,politics,%')
+                                ORDER BY importance DESC, last_seen DESC LIMIT 16""", since) if table_exists(conn, "news_stories") else []
         newest_news = conn.execute("SELECT max(first_seen) FROM news_items").fetchone()[0] if table_exists(conn, "news_items") else None
         jobs = rows(conn, """SELECT r.job, r.started_at, r.status, substr(r.detail, 1, 160) AS detail
                              FROM runs r JOIN (SELECT job, MAX(id) id FROM runs GROUP BY job) l ON l.id = r.id
                              WHERE r.started_at >= ? ORDER BY r.job""", (now - timedelta(days=4)).isoformat(timespec="seconds"))
+    stories = [x for x in stories if not STORY_NOISE.search(x["title"] or "")][:8]
     ev = api_events({})
     avg200 = sum(past) / len(past) if len(past) == 200 else None
     market = {"spy": dict(spy) if spy else None, "avg200": avg200, "vix": dict(vix) if vix else None,
               "range": {"day": latest["day"], "q": latest["q"], "outcome": latest["outcome"], "is_today": latest["day"] == today} if latest else None}
     return {"today": today, "market": market, "tests": tests, "stories": stories, "newest_news": newest_news,
-            "movers": ev["movers"][:10], "movers_asof": ev["fetched_at"], "calendar": fed,
+            "movers": [m for m in ev["movers"] if m.get("grp") in ("macro", "politics", "geopolitics", "business")
+                       and not NOISE.search(f"{m.get('event_title') or ''} {m.get('question') or ''}")][:10], "movers_asof": ev["fetched_at"], "calendar": fed,
             "jobs": {"total": len(jobs), "bad": [j for j in jobs if j["status"] in BAD_RUN]},
             "db_mb": round(DB_PATH.stat().st_size / 1e6, 1),
             "risk": cached("risk", 3600, _risk), "priced": cached("priced", 300, _priced_in)}

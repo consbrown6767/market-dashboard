@@ -1027,7 +1027,7 @@ Use `~/MarketData/.venv/bin/python` as Python.
 
 ## 17. Change log
 
-- **2026-11-16:** review of the whole project and `docs/ROADMAP.md`; Today tab (home page) and Research tab added; Scorecard shows live records first; this file's header shortened and this log started. Later the same day: "Risk right now" and "What's priced in" panels on the Today tab (roadmap step 3).
+- **2026-11-16:** review of the whole project and `docs/ROADMAP.md`; Today tab (home page) and Research tab added; Scorecard shows live records first; this file's header shortened and this log started. Later the same day: "Risk right now" and "What's priced in" panels on the Today tab (roadmap step 3). Today tab filters: top stories need a market topic (Fed, economy, business, energy, geopolitics, US politics and so on) and drop films, celebrities and crime trials; betting markets drop crypto and novelty bets (tweet counts, press-office timing and the like).
 - **2026-11-13 and earlier** (newest first, as recorded in the old header):
   - country stock-market rotation: 8 versions, both finalists fail
   - global bond strategies: 8 versions, one finalist, fails its vault
