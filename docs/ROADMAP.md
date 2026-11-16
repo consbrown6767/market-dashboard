@@ -46,8 +46,8 @@ hours a week it deserves. This sets the order of step 3.
 
 | Item | What it gives |
 |---|---|
-| Risk panel: trend state, expected move size, odds of a big drop | When risk is high or low, without claiming to know direction |
-| "What's priced in" panel: options, rate markets and Polymarket on one screen | The market's own view of the Fed, elections and big events |
+| Risk panel: trend state, expected move size, odds of a big drop | **Done 2026-11-16** (Today tab, "Risk right now"): how often the S&P 500 fell 5% or 10% within a month after days like today, by trend and VIX band, since 1990. History, not a tested forecast |
+| "What's priced in" panel: options, rate markets and Polymarket on one screen | **Done 2026-11-16** (Today tab): SPY's options-implied move for about a week, a month and two months, and the busiest macro, politics and geopolitics betting markets |
 | Savings-path simulator on the 100 years of data | How savings rate, time and leverage drive outcomes |
 | Forecast journal: the owner's own predictions, scored like the models | Calibration practice with results in weeks |
 | Fast event forecasts scored against Polymarket (leadership votes, Fed meetings, confirmations) | Quick feedback; the Dec 1 2026 Senate leader vote could be the first |

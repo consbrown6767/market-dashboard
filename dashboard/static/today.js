@@ -52,6 +52,34 @@ document.addEventListener("click", (e) => {
     badge($("#td-market-badge"), spy?.ts, 90, spy ? `Prices ${ago(spy.ts)}` : "No prices");
   }
 
+  function drawRisk(d) {
+    const r = d.risk, t = r.today, pc = (x) => (isNum(x) ? `${(x * 100).toFixed(0)}%` : "–");
+    if (!t) { $("#td-risk").innerHTML = `<div class="empty" style="padding:16px">No index history yet.</div>`; return; }
+    const cell = r.table.find((c) => c.up === t.up && c.band === t.band) || {};
+    const worse = cell.drop5 > r.all.drop5 * 1.25, better = cell.drop5 < r.all.drop5 * 0.75;
+    $("#td-risk-asof").textContent = `as of the ${dayText(t.date)} close`;
+    $("#td-risk-stats").innerHTML = stat("Days like today", `${t.up ? "Uptrend" : "Downtrend"}, VIX ${fixed(t.vix, 1)}`, `${cell.n ? cell.n.toLocaleString("en-US") : 0} similar days since ${r.since.slice(0, 4)}`)
+      + stat("Fell 5%+ within a month", pc(cell.drop5), `all days: ${pc(r.all.drop5)}`, worse ? "neg" : better ? "pos" : "")
+      + stat("Fell 10%+ within a month", pc(cell.drop10), `all days: ${pc(r.all.drop10)}`)
+      + stat("Typical daily move after", `${fixed(cell.avg_move, 2)}%`, `all days: ${fixed(r.all.avg_move, 2)}%`);
+    $("#td-risk").innerHTML = `<table><thead><tr><th>Trend</th><th>VIX</th><th>Days</th><th>Fell 5%+</th><th>Fell 10%+</th><th>Typical daily move</th></tr></thead><tbody>${r.table.filter((c) => c.n).map((c) =>
+      `<tr class="${c.up === t.up && c.band === t.band ? "td-here" : ""}"><td>${c.up ? "Up" : "Down"}</td><td>${esc(c.band_name)}</td><td>${c.n.toLocaleString("en-US")}</td>
+        <td>${pc(c.drop5)}</td><td>${pc(c.drop10)}</td><td>${fixed(c.avg_move, 2)}%</td></tr>`).join("")}</tbody></table>`;
+    $("#td-risk-foot").textContent = `S&P 500, every day since ${r.since.slice(0, 4)}: how often it was 5% or 10% lower at some point in the next ${r.horizon_days} trading days. Trend is the close against its 200-day average. This describes the past and hasn't been tested as a prediction.`;
+  }
+
+  function drawPriced(d) {
+    const p = d.priced;
+    $("#td-priced-stats").innerHTML = p.moves.length ? p.moves.map((m) => `<div class="stat"><small>SPY by ${esc(dayText(m.expiration))}</small><strong>±${fixed(m.move, 1)}%</strong>
+        <em>${m.days} day${m.days === 1 ? "" : "s"}${isNum(p.spy_price) ? ` · ±$${fixed(p.spy_price * m.move / 100, 0)}` : ""}</em></div>`).join("")
+      : `<div class="stat"><small>SPY options</small><strong class="dim">–</strong><em>no quotes in the last snapshot</em></div>`;
+    $("#td-priced").innerHTML = p.markets.length ? p.markets.map((e) => `<div class="item"><div><div class="item-name"><a class="nw-link" href="${esc(e.url)}" target="_blank" rel="noopener noreferrer">${esc(e.title)}</a></div>
+        <div class="item-sub">${e.top.map((o) => `${esc(o.label)} ${fixed(o.price * 100, 0)}%`).join(" · ")}</div></div>
+        <div><div class="item-change dim">${usd(e.volume_24h)} in 24h</div></div></div>`).join("")
+      : `<div class="empty">No betting markets stored yet.</div>`;
+    badge($("#td-priced-badge"), p.snapshot_ts, 90, p.snapshot_ts ? `Options ${ago(p.snapshot_ts)}` : "No options data");
+  }
+
   function drawNews(d) {
     $("#td-news").innerHTML = d.stories.length ? d.stories.map((s) => `<div class="nw-item">
         <div class="nw-head"><span class="nw-trust ${esc(String(s.trust_label || "").toLowerCase())}" title="${esc(`How well sourced this story is, not whether it's true${s.trust_why ? ` (${s.trust_why})` : ""}`)}">${esc(s.trust_label || "")}</span>
@@ -97,6 +125,6 @@ document.addEventListener("click", (e) => {
     drawMarket(d);
     $("#td-tests-n").textContent = d.tests.length;
     $("#td-tests").innerHTML = liveTestsTable(d.tests);
-    drawNews(d); drawMovers(d); drawCalendar(d); drawSystem(d);
+    drawRisk(d); drawPriced(d); drawNews(d); drawMovers(d); drawCalendar(d); drawSystem(d);
   };
 })();

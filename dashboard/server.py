@@ -934,6 +934,64 @@ def _live_tests(conn) -> list[dict]:
     return out
 
 
+VIX_BANDS = [(0, 15, "below 15 (calm)"), (15, 20, "15 to 20"), (20, 30, "20 to 30 (nervous)"), (30, 999, "above 30 (panic)")]
+
+
+def _risk() -> dict:
+    """History's base rates for days like today: how often the S&P 500 went on to fall 5% or 10%
+    within the next 21 trading days, by trend (close vs its 200-day average) and VIX band. Every
+    day since 1990 is used, so this describes the past; it isn't a tested prediction model."""
+    with db() as conn:
+        spx = conn.execute("SELECT date, close FROM index_daily WHERE symbol = 'SPX' ORDER BY date").fetchall()
+        vix = dict(conn.execute("SELECT date, close FROM index_daily WHERE symbol = 'VIX'").fetchall())
+    dates, px = [r[0] for r in spx], [r[1] for r in spx]
+    cells: dict[tuple, list] = {}
+    run, today = sum(px[:200]), None
+    for i in range(199, len(px)):
+        if i > 199:
+            run += px[i] - px[i - 200]
+        v = vix.get(dates[i])
+        if v is None:
+            continue
+        key = (px[i] > run / 200, next(k for k, (lo, hi, _) in enumerate(VIX_BANDS) if lo <= v < hi))
+        if i == len(px) - 1:
+            today = {"date": dates[i], "up": key[0], "band": key[1], "vix": v, "gap": (px[i] / (run / 200) - 1) * 100}
+        if i + 21 < len(px):
+            worst = min(px[i + 1:i + 22]) / px[i] - 1
+            moves = [abs(px[j] / px[j - 1] - 1) * 100 for j in range(i + 1, i + 22)]
+            cells.setdefault(key, []).append((worst <= -0.05, worst <= -0.10, sum(moves) / 21))
+
+    def stats(xs):
+        n = len(xs)
+        if not n:
+            return {"n": 0}
+        return {"n": n, "drop5": sum(x[0] for x in xs) / n, "drop10": sum(x[1] for x in xs) / n, "avg_move": sum(x[2] for x in xs) / n}
+    table = [{"up": up, "band": b, "band_name": VIX_BANDS[b][2], **stats(cells.get((up, b), []))}
+             for up in (True, False) for b in range(len(VIX_BANDS))]
+    return {"today": today, "table": table, "all": stats([x for xs in cells.values() for x in xs]),
+            "since": dates[199], "horizon_days": 21}
+
+
+def _priced_in() -> dict:
+    """What markets expect: SPY's options-implied move for coming expirations, and the busiest
+    macro, politics and geopolitics betting markets with their leading outcomes."""
+    d = api_option_detail({"symbol": ["SPY"]})
+    moves = [{"expiration": e["expiration"], "days": e["days"], "move": e["implied_move"], "iv": e.get("atm_iv")}
+             for e in d.get("expirations", []) if e.get("implied_move") and e["days"] >= 1]
+    picks, seen = [], set()
+    for target in (7, 30, 60):
+        best = min(moves, key=lambda m: abs(m["days"] - target), default=None)
+        if best and best["expiration"] not in seen:
+            seen.add(best["expiration"])
+            picks.append(best)
+    ev = api_events({})
+    markets = [{"title": e["title"], "grp": e["grp"], "url": e["url"], "volume_24h": e["volume_24h"], "end_date": e["end_date"],
+                "top": [{"label": m["label"] or m["question"], "price": m["price"], "change_1d": m["change_1d"]} for m in e["markets"][:2]]}
+               for e in ev["events"] if e["grp"] in ("macro", "politics", "geopolitics")][:8]
+    return {"spy_price": d.get("price"), "moves": picks, "snapshot_ts": d.get("snapshot_ts"), "markets": markets,
+            "markets_asof": ev["fetched_at"]}
+
+
 def _today() -> dict:
     now = datetime.now(ET)
     today = now.date().isoformat()
@@ -960,7 +1018,8 @@ def _today() -> dict:
     return {"today": today, "market": market, "tests": tests, "stories": stories, "newest_news": newest_news,
             "movers": ev["movers"][:10], "movers_asof": ev["fetched_at"], "calendar": fed,
             "jobs": {"total": len(jobs), "bad": [j for j in jobs if j["status"] in BAD_RUN]},
-            "db_mb": round(DB_PATH.stat().st_size / 1e6, 1)}
+            "db_mb": round(DB_PATH.stat().st_size / 1e6, 1),
+            "risk": cached("risk", 3600, _risk), "priced": cached("priced", 300, _priced_in)}
 
 
 def api_today(q):

@@ -58,6 +58,20 @@
             <span class="note">Click a row for its full record</span></div>
           <div class="panel-content flush" id="td-tests"></div>
         </div>
+        <div class="panel col-2 compact" data-panel="td-risk">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Risk right now</span><span class="dim" id="td-risk-asof"></span></div>
+            <span class="note">History, not a forecast</span></div>
+          <div class="stats" id="td-risk-stats"></div>
+          <div class="panel-content flush" id="td-risk"></div>
+          <div class="panel-foot" id="td-risk-foot"></div>
+        </div>
+        <div class="panel col-2 compact" data-panel="td-priced">
+          <div class="panel-header"><div class="panel-header-left"><span class="panel-title">What's priced in</span></div>
+            <span class="badge" id="td-priced-badge">–</span></div>
+          <div class="stats" id="td-priced-stats"></div>
+          <div class="panel-content" id="td-priced"></div>
+          <div class="panel-foot">The move is what SPY options charge for (the at-the-money call plus put): roughly the size of move the market expects by that date, either way. Betting-market prices read as chances.</div>
+        </div>
         <div class="panel col-2 medium" data-panel="td-news">
           <div class="panel-header"><div class="panel-header-left"><span class="panel-title">Top stories · 24h</span></div>
             <span class="badge" id="td-news-badge">–</span></div>
