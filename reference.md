@@ -859,6 +859,15 @@ than priced (1-5%: 1.3% vs 2.6%), every gap within luck. Selling long shots (buy
 (95% range −1.5% to +2.1%); buying favourites +0.3%. Both fail the pre-set rules. Rerun possible later on markets first seen
 after 2026-11-16. Not live.
 
+### Also tested: the signal stack (2026-11-16, failed; `docs/signal-stack/`)
+The quant-fund approach: 27 published signals on S&P 500 members at the time (momentum, reversal, low risk, trading activity,
+calendar, earnings, options from 2024), each in its paper's direction, equal weights, weekly, 2017-01 to 2026-10. Long-only top
+fifth: 9.7% (families balanced) and 10.5% (plain average) a year vs SPY 15.0% and 12.1% for all stocks in equal amounts; Sharpe
+0.53 and 0.60 vs 0.79. Long-short overlays −5.7% and −4.5% a year. All four fail in both halves. Alone, crash protection (t 2.1)
+and earnings drift (t 2.0) pointed the right way; the "less-traded stocks do better" signals were wrong (t −2.2, −2.7).
+Three plan changes logged before results; the original-rule results were also seen (a crashed rerun) and fail the same way.
+Company-accounts signals not tested (needs SEC EDGAR and a contact email). Not live.
+
 ### Live paper record (from 2026-11-13; `docs/paper-record/`)
 Nothing traded. Three rules, version 1, fixed in `docs/paper-record/PLAN.md`: **leveraged trend** (SSO while SPY > its
 200-day average, else T-bills, traded at the next close), **10-month trend** (SPY while above its 10-month-end average,
@@ -1035,6 +1044,7 @@ Use `~/MarketData/.venv/bin/python` as Python.
 
 ## 17. Change log
 
+- **2026-11-16 (evening):** the signal stack tested and failed (`collectors/signal_stack.py`, `docs/signal-stack/`).
 - **2026-11-16 (evening):** economy gauges on the Today tab and the new daily job `gauges` (`collectors/macro_gauges.py`, FRED series into `macro_series` with source `fred-gauges`).
 - **2026-11-16 (evening):** Polymarket long-shot bias tested and failed (`collectors/poly_bias.py`, `docs/polymarket-bias/`: 1,076 markets, both rules about +0.4% a bet after costs, within luck).
 - **2026-11-16 (evening):** event forecasts (`collectors/event_forecast.py`, `docs/event-forecasts/`; first one logged: Van Hollen wins the Dec 1 Senate leader vote, 3% against Polymarket's 9.3%), the owner's forecast journal through the same script, and the savings-path simulator on the Research tab (`collectors/savings_paths.py` writes `~/MarketData/savings/paths.json`).

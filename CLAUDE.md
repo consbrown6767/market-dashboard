@@ -88,6 +88,9 @@ the roadmap's step 3 or 4 needs the owner's OK before building.
   `docs/fx/`. Data in `macro_series` (FRED/OECD rates, CPI, unemployment, spot; Yahoo EM spot). Both vaults now used.
 - Global government bond strategies (tested 2026-11-13, failed): `collectors/bonds.py`, `docs/bonds/` (vault used).
 - Country stock-market rotation (tested 2026-11-13, failed): `collectors/countries.py`, `docs/countries/` (vault used).
+- Signal stack (tested 2026-11-16, failed): `collectors/signal_stack.py`, `docs/signal-stack/`. 27 published signals, equal
+  weights, S&P 500, 2017-2026; lost to SPY and to equal amounts. Stage 2 (company accounts via SEC EDGAR) is unbuilt and
+  needs a contact email from the owner: never send theirs without being told to.
 - Polymarket long-shot bias (tested 2026-11-16, failed): `collectors/poly_bias.py`, `docs/polymarket-bias/`. A rerun must use
   only markets first seen after 2026-11-16.
 - Live paper record (from 2026-11-13, owner's OK): `collectors/paper_record.py` (job `paper`, weekdays 09:10/16:40/20:40),

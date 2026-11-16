@@ -57,7 +57,6 @@ def load():
     earn = pd.read_sql("SELECT symbol, ts FROM earnings_dates", db)
     div = pd.read_sql("SELECT symbol, ex_date FROM dividends", db)
     iv = pd.read_sql("SELECT underlying, date, gap, skew, cvol, pvol FROM direction_iv_daily WHERE min_trades = 5", db)
-                     "(SELECT MAX(min_trades) FROM direction_iv_daily)", db)
     cache = OUT / "option_volume.csv"
     if cache.exists():
         ov = pd.read_csv(cache)

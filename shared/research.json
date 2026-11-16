@@ -4,7 +4,8 @@
     "Ideas work in the years their research was based on, then fade once published. That happened in stocks, currencies, bonds and countries.",
     "Risk can be predicted, direction can't. The move-size model beat both simple guesses; no direction model did.",
     "What held up is the stock market's own return, taken with more risk while the trend is up (leveraged trend). That's a risk choice, not skill.",
-    "Fancier math (hidden-state models, lasso, boosted trees, random-matrix cleaning) didn't beat simple rules."
+    "Fancier math (hidden-state models, lasso, boosted trees, random-matrix cleaning) didn't beat simple rules.",
+    "Combining many weak signals, the way quant funds do, also failed in large stocks. The one input that keeps pointing the right way is the price of crash protection in options."
   ],
   "studies": [
     {"id": "spx-move", "date": "2026-11-09", "name": "S&P 500 move size", "area": "Forecasting", "versions": 1, "verdict": "live",
@@ -106,6 +107,11 @@
      "idea": "Long shots are said to be overpriced in betting markets. Sell them (or buy heavy favourites) and hold to the end.",
      "result": "1,076 markets over three weeks. Long shots came in slightly less often than priced (1.3% against 2.6%), within luck. After the bid-ask cost both rules made about +0.4% a bet, no different from zero.",
      "lesson": "Short-lived Polymarket prices were close to fair. Could be rerun in six months on markets first seen after Nov 16.",
-     "doc": "docs/polymarket-bias/README.md"}
+     "doc": "docs/polymarket-bias/README.md"},
+    {"id": "signal-stack", "date": "2026-11-16", "name": "The signal stack: 27 weak signals combined", "area": "US stocks", "versions": 4, "verdict": "failed",
+     "idea": "What quant funds do: combine many weak published signals (momentum, reversal, low risk, trading activity, calendar, earnings, options) on S&P 500 stocks, each pointed the way its paper says, with equal weights.",
+     "result": "2017-2026: the top fifth of stocks made 9.7% to 10.5% a year against SPY's 15.0% and 12.1% for every stock in equal amounts. The long-short version lost about 5% a year.",
+     "lesson": "Signals favouring smaller, less-traded stocks were badly wrong while the giants led. Crash protection pointed the right way for the fifth time. Company-accounts signals weren't tested.",
+     "doc": "docs/signal-stack/README.md"}
   ]
 }

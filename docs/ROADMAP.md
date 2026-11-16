@@ -55,7 +55,8 @@ hours a week it deserves. This sets the order of step 3.
 
 ### Step 4. One research bet at a time
 
-- **The 50-signal stack:** about 50 published signals on S&P 500 stocks (prices, options, company
+- **The signal stack, stage 1: done 2026-11-16, failed** (`docs/signal-stack/`). 27 signals from prices, trading, calendar, earnings and options; all four versions trailed SPY and the equal-amounts basket. Stage 2 (about 15 company-accounts signals from SEC filings) is not built: it needs a contact email for the SEC and would be a third look at the same years, so it's only worth doing if the owner wants it.
+- **Original description of the stack:** about 50 published signals on S&P 500 stocks (prices, options, company
   accounts from SEC filings, earnings events), signs fixed from the papers, equal weights, one backtest,
   then the live paper record. Needs the owner's OK and a contact email for the SEC's download rules.
 - **Polymarket bias test:** **done 2026-11-16, failed** (`docs/polymarket-bias/`). Prices were close to fair; both trading rules made about nothing after costs. A clean rerun is possible in six months on markets first seen after 2026-11-16.
