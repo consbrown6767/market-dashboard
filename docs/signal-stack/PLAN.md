@@ -108,4 +108,13 @@ bottom) two-fifths.
 
 ## Changes
 
-(none yet)
+All three were made on 2026-11-16 **before any strategy result was looked at**. The first run's output was
+opened only for its mechanics: how many weeks each signal was used, the number of stocks, and SPY's own return.
+
+1. **Coverage rule: 80% changed to 30%.** With 80%, all six options signals, the dividend signal and most weeks
+   of the earnings signals were never used, because options trade actively enough in only about half the stocks
+   and the earnings and dividend tables cover today's members, not past ones. A stock missing a signal still
+   gets 0 (neutral) for it, so low coverage only waters a signal down.
+2. **Options data:** days with 5 or more trades per option, as in the stock direction model. The plan didn't say.
+3. **Signal 21** is measured against SPY's return over the same three days, as in the paper, since stocks
+   report on different days.
