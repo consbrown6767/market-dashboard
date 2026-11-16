@@ -918,6 +918,24 @@ def _live_tests(conn) -> list[dict]:
                         "what": f"Each week, the chance each {'of the other 400 S&P 500 stocks' if four else 'S&P 100 stock'} beats SPY",
                         "now": f"{m['logged'] - m['resolved']:,} predictions open", "record": record,
                         "verdict": _ledger_verdict(m), "needs": f"{ledger.MIN_RESOLVED} weeks", "tab": "scorecard"})
+        elif m["model"] in ("event-forecast", "owner-forecast"):
+            mine = m["model"] == "owner-forecast"
+            mk = m["baselines"].get("market", {})
+            open_rows = rows(conn, """SELECT p.target, p.forecast, p.baselines FROM predictions p LEFT JOIN prediction_outcomes o
+                                      ON o.prediction_id = p.id WHERE p.model = ? AND p.mode = 'live' AND o.prediction_id IS NULL
+                                      ORDER BY p.resolves_at LIMIT 1""", m["model"])
+            now = "Nothing open"
+            if open_rows:
+                r = open_rows[0]
+                now = (f"Next: {r['target']}: {json.loads(r['forecast'])['p']:.0%} "
+                       f"(market {json.loads(r['baselines'])['market']['p']:.0%} when logged)")
+            record = f"{m['resolved']} of {m['logged']} forecasts settled"
+            if mk.get("skill") is not None:
+                record += f". Error {abs(mk['skill']) * 100:.0f}% {'smaller' if mk['skill'] >= 0 else 'bigger'} than the betting market so far"
+            out.append({"id": m["model"], "name": "Your forecast journal" if mine else "Event forecasts",
+                        "what": ("Your own chances for dated events" if mine else "Chances for dated events, set by a written rule")
+                                + ", scored against the betting market",
+                        "now": now, "record": record, "verdict": _ledger_verdict(m), "needs": f"{ledger.MIN_RESOLVED} events", "tab": "scorecard"})
     if not any(m["model"] == "stock-direction" for m in live):
         out.append({"id": "stock-direction", "name": "Stock direction", "what": "Each week, the chance each S&P 500 stock beats SPY, from options prices",
                     "now": "First weekly predictions are made on its next Tuesday evening run", "record": "Not started",

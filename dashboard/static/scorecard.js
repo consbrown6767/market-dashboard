@@ -10,7 +10,9 @@
       // Versions ending "@sp400" cover the 400 other S&P 500 stocks.
       whatFor: v => v.endsWith("@sp400") ? "Each week, the chance each of the other 400 S&P 500 stocks beats SPY over the next week (from options prices)" : null },
   };
-  const BASELINE_NAMES = { recent: "Recent moves", vix: "VIX implied move", wide: "Wide range", base_rate: "Base rate (how often stocks beat SPY)", price_only: "Last week's move only" };
+  MODELS["event-forecast"] = { name: "Event forecasts", what: "Chances for dated events (votes, Fed meetings, confirmations), set by a written rule before the event" };
+  MODELS["owner-forecast"] = { name: "Your forecast journal", what: "Your own chances for dated events, scored the same way as the models" };
+  const BASELINE_NAMES = { market: "Betting-market price at the same moment", even: "A coin flip (50%)", recent: "Recent moves", vix: "VIX implied move", wide: "Wide range", base_rate: "Base rate (how often stocks beat SPY)", price_only: "Last week's move only" };
   const VERDICTS = { better: ["fresh", "Beats it"], worse: ["down", "Worse"], "no clear difference": ["stale", "No clear difference"], "too few": ["", "Too few to judge"] };
   const state = { recentMode: "all", backtests: false };  // live records first; backtests on request
 

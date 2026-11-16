@@ -1,0 +1,20 @@
+{
+  "id": "2026-12-01-senate-leader",
+  "target": "Chris Van Hollen wins the Senate Democratic leader election (caucus vote scheduled Dec 1, 2026)",
+  "opens_at": "2026-12-01T00:00:00-05:00",
+  "resolves_at": "2026-12-02T12:00:00-05:00",
+  "p": 0.03,
+  "method": "Fixed rule, set 2026-11-15 and rechecked 2026-11-16 (no public positions had changed). Each of the 55 caucus members gets a chance of voting for Van Hollen: 95% if they endorsed him, 5% if they endorsed Schumer, 90% if they said they won't back Schumer, 100%/0% for the two candidates. Undecided or silent members start from the share against Schumer among members already on record (incumbents 18%, newly elected 86%), each pulled halfway to the overall 38%: 28% for incumbents, 62% for the newly elected, plus or minus 15 points for a public signal since August (Pappas, Booker, Markey up; Wyden down). Expected votes: 20 of 55 (28 needed). The win chance is the share of 200,000 simulated votes with 28 or more, letting the undecided swing together (10-point shared shock): 3.2%, logged as 3%. Betting-market prices were not used.",
+  "sources": [
+    "https://whipcount.dropsitenews.com/ (statements through Nov 13, 2026)",
+    "https://abcnews.com/Politics/schumer-van-hollen-facing-off-senate-majority-leader/story?id=138111386",
+    "https://www.onpointpolitics.us/majority-tracker",
+    "The dashboard's stored news, Nov 12-15 2026 (The Hill, Guardian, CNN, AP)"
+  ],
+  "caveats": "Secret ballot. Van Hollen says several senators counted for Schumer have privately switched. If the vote is postponed past the resolve date, resolve when it's held. If Van Hollen withdraws or a third candidate wins, the outcome is 0.",
+  "market": {
+    "poly_market_id": "1662429",
+    "question": "Will Chris Van Hollen be the next Senate Majority Leader?",
+    "note": "Close match, not exact: the market is about who becomes majority leader in January, which follows from the caucus vote."
+  }
+}
