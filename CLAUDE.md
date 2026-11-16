@@ -44,6 +44,12 @@ the roadmap's step 3 or 4 needs the owner's OK before building.
   `/api/today` and `/api/research`. They only read other tabs' records. `shared/research.json` is the list
   of every study (the server reads it in place, no `install.sh` needed): **add an entry whenever a study
   finishes**, with numbers from its write-up.
+- Event forecasts and the owner's forecast journal (since 2026-11-16): `collectors/event_forecast.py`, run by hand from
+  the repo (no job, no `install.sh`). One JSON file per forecast in `docs/event-forecasts/` (the evidence, in git); the
+  chance must come from a written rule and sources, never from the market price it's scored against. `"who": "owner"`
+  logs the owner's own forecast. **Check `event_forecast.py due` when asked about results, and resolve by hand.**
+- Savings-path simulator (Research tab): `collectors/savings_paths.py` writes `~/MarketData/savings/paths.json` (run by
+  hand after French data is refreshed); the browser does the what-ifs. History replayed, never called a forecast.
 - Scorecard tab: every new prediction model logs through `collectors/ledger.py` (the prediction ledger:
   written before the outcome, never edited, always next to a simple baseline, live and backtest apart).
   Page `dashboard/static/scorecard.js`. The server imports `ledger` from `~/MarketData/app`, so after

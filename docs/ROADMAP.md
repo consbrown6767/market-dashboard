@@ -48,10 +48,10 @@ hours a week it deserves. This sets the order of step 3.
 |---|---|
 | Risk panel: trend state, expected move size, odds of a big drop | **Done 2026-11-16** (Today tab, "Risk right now"): how often the S&P 500 fell 5% or 10% within a month after days like today, by trend and VIX band, since 1990. History, not a tested forecast |
 | "What's priced in" panel: options, rate markets and Polymarket on one screen | **Done 2026-11-16** (Today tab): SPY's options-implied move for about a week, a month and two months, and the busiest macro, politics and geopolitics betting markets |
-| Savings-path simulator on the 100 years of data | How savings rate, time and leverage drive outcomes |
-| Forecast journal: the owner's own predictions, scored like the models | Calibration practice with results in weeks |
-| Fast event forecasts scored against Polymarket (leadership votes, Fed meetings, confirmations) | Quick feedback; the Dec 1 2026 Senate leader vote could be the first |
-| Recession and inflation gauges | Context for big personal decisions, not for timing stocks (macro timing failed its test) |
+| Savings-path simulator on the 100 years of data | **Done 2026-11-16** (Research tab, "Savings paths"): a monthly saving replayed from every start month since 1928, in T-bills, the market, 2x always and leveraged trend. Series from `collectors/savings_paths.py` |
+| Forecast journal: the owner's own predictions, scored like the models | **Done 2026-11-16** (backend): a forecast file with `"who": "owner"` goes to the ledger as "Your forecast journal". Tell Claude the event and your chance; no entry form on the page, because the server is read-only |
+| Fast event forecasts scored against Polymarket (leadership votes, Fed meetings, confirmations) | **Done 2026-11-16**: `collectors/event_forecast.py`, evidence files in `docs/event-forecasts/`. First forecast: Van Hollen wins the Dec 1 Senate leader vote, 3% against the market's 9.3%. **Resolve by hand after Dec 1** (`event_forecast.py due`, then `resolve`) |
+| Recession and inflation gauges | Not built. Needs a new daily data job (FRED: yield curve, unemployment, inflation), so it waits for the owner's OK |
 
 ### Step 4. One research bet at a time
 

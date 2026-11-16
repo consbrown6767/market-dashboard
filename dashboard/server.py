@@ -1049,6 +1049,16 @@ def _today() -> dict:
             "risk": cached("risk", 3600, _risk), "priced": cached("priced", 300, _priced_in)}
 
 
+SAVINGS_PATH = Path.home() / "MarketData" / "savings" / "paths.json"
+
+
+def api_savings(q):
+    """Monthly return series written by collectors/savings_paths.py; the browser runs the what-ifs."""
+    if not SAVINGS_PATH.exists():
+        return {"ready": False}
+    return {"ready": True, **json.loads(SAVINGS_PATH.read_text())}
+
+
 def api_today(q):
     return cached("today", 45, _today)
 
@@ -1062,7 +1072,7 @@ def api_research(q):
     return {"lessons": data["lessons"], "studies": data["studies"], "tests": cached("live-tests", 45, tests)}
 
 
-ROUTES = {"/api/today": api_today, "/api/research": api_research, "/api/health": api_health, "/api/options": api_options, "/api/option_detail": api_option_detail,
+ROUTES = {"/api/today": api_today, "/api/research": api_research, "/api/savings": api_savings, "/api/health": api_health, "/api/options": api_options, "/api/option_detail": api_option_detail,
           "/api/stock_bars": api_stock_bars, "/api/chain_expirations": api_chain_expirations, "/api/chain": api_chain,
           "/api/option_bars": api_option_bars, "/api/pairs": api_pairs, "/api/pair": api_pair, "/api/watchlists": api_watchlists,
           "/api/events": api_events, "/api/market_history": api_market_history,

@@ -36,5 +36,52 @@
   }
   $("#rs-filter").addEventListener("click", (e) => { if (e.target.dataset.rs) { state.filter = e.target.dataset.rs; draw(); } });
 
-  loaders.research = async () => { state.data = await api("/api/research"); draw(); };
+  // ---------- savings paths: the same monthly saving replayed from every start month in the data
+  const sav = { years: 30, data: null };
+  const money = (x) => `$${Math.round(x).toLocaleString("en-US")}`;
+  function paths(returns, amount, n) {
+    // One ending value per start month: save `amount` at the start of each month for n months.
+    // Also the biggest fall in the account from an earlier high (new savings included).
+    const ends = [], falls = [];
+    for (let s = 0; s + n <= returns.length; s++) {
+      let w = 0, peak = 0, fall = 0;
+      for (let i = s; i < s + n; i++) {
+        w = (w + amount) * (1 + returns[i]);
+        if (w > peak) peak = w; else if (peak > 0) fall = Math.min(fall, w / peak - 1);
+      }
+      ends.push(w); falls.push(fall);
+    }
+    return { ends, falls };
+  }
+  const pick = (sorted, q) => sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))];
+  function drawSavings() {
+    const d = sav.data;
+    if (!d?.ready) { $("#rs-savings").innerHTML = `<div class="empty" style="padding:16px">Not built yet. Run collectors/savings_paths.py.</div>`; return; }
+    const amount = Math.max(1, Number($("#rs-sav-amount").value) || 500), n = sav.years * 12, paid = amount * n;
+    $("#rs-sav-years").innerHTML = [10, 20, 30, 40].map((y) => `<button class="chip ${y === sav.years ? "active" : ""}" data-sav="${y}">${y} years</button>`).join(" ");
+    const base = paths(d.returns.market, amount, n);
+    const rowsHtml = ["tbills", "market", "lev2", "lev_trend"].map((k) => {
+      const p = paths(d.returns[k], amount, n), sorted = [...p.ends].sort((a, b) => a - b);
+      const worstAt = d.months[p.ends.indexOf(sorted[0])];
+      const ahead = k === "market" || k === "tbills" ? null : p.ends.filter((e, i) => e > base.ends[i]).length / p.ends.length;
+      const below = p.ends.filter((e) => e < paid).length / p.ends.length;
+      return `<tr><td><b>${esc(d.names[k])}</b></td><td>${money(sorted[0])} <span class="dim">(started ${esc(worstAt.slice(0, 4))})</span></td>
+        <td>${money(pick(sorted, 0.1))}</td><td><b>${money(pick(sorted, 0.5))}</b></td><td>${money(pick(sorted, 0.9))}</td>
+        <td class="${below > 0 ? "neg" : "dim"}">${(below * 100).toFixed(0)}%</td>
+        <td>${ahead == null ? `<span class="dim">–</span>` : `${(ahead * 100).toFixed(0)}%`}</td>
+        <td class="neg">${(Math.min(...p.falls) * 100).toFixed(0)}%</td></tr>`;
+    });
+    $("#rs-savings").innerHTML = `<table><thead><tr><th>Held in</th><th>Worst start</th><th>1 in 10 did worse than</th><th>Typical (middle)</th><th>1 in 10 did better than</th>
+      <th>Ended with less than paid in</th><th>Beat the 1x market</th><th>Biggest fall along the way</th></tr></thead><tbody>${rowsHtml.join("")}</tbody></table>`;
+    $("#rs-sav-asof").textContent = `${base.ends.length} start months, ${d.first.slice(0, 4)} to ${d.months[base.ends.length - 1].slice(0, 4)}`;
+    $("#rs-sav-foot").textContent = `You'd pay in ${money(paid)} over ${sav.years} years. Each row replays that saving from every start month in US history (data ${d.first} to ${d.last}) and shows where it ended. Dollars aren't adjusted for inflation, so compare each row with T-bills, not with what was paid in. Leverage costs are included (1% a year to borrow, 0.05% per trade); taxes and fund fees aren't. Start months overlap, so these aren't independent tries. History replayed, not a forecast, and not advice.`;
+  }
+  $("#rs-sav-years").addEventListener("click", (e) => { if (e.target.dataset.sav) { sav.years = Number(e.target.dataset.sav); drawSavings(); } });
+  $("#rs-sav-amount").addEventListener("input", drawSavings);
+
+  loaders.research = async () => {
+    state.data = await api("/api/research"); draw();
+    if (!sav.data) sav.data = await api("/api/savings");
+    drawSavings();
+  };
 })();
