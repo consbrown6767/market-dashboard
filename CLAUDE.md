@@ -86,6 +86,8 @@ the roadmap's step 3 or 4 needs the owner's OK before building.
   `docs/fx/`. Data in `macro_series` (FRED/OECD rates, CPI, unemployment, spot; Yahoo EM spot). Both vaults now used.
 - Global government bond strategies (tested 2026-11-13, failed): `collectors/bonds.py`, `docs/bonds/` (vault used).
 - Country stock-market rotation (tested 2026-11-13, failed): `collectors/countries.py`, `docs/countries/` (vault used).
+- Polymarket long-shot bias (tested 2026-11-16, failed): `collectors/poly_bias.py`, `docs/polymarket-bias/`. A rerun must use
+  only markets first seen after 2026-11-16.
 - Live paper record (from 2026-11-13, owner's OK): `collectors/paper_record.py` (job `paper`, weekdays 09:10/16:40/20:40),
   plan `docs/paper-record/PLAN.md`; tables `paper_positions`/`paper_marks` (hash-chained: never edit) and `paper_skips`;
   Scorecard panel `sc-paper`. Leveraged trend, 10-month trend, pre-Fed drift vs SPY; a rule change is a new version.

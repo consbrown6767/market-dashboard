@@ -851,6 +851,13 @@ Momentum, reversal, dividend-yield value, low volatility, value + momentum, tren
 vault 2011-2026. Finalists trend across countries (4.4% a year vs SPY 14.0%) and filtered momentum (−2.9% a year) both
 failed beyond luck. Not live.
 
+### Also tested: Polymarket long-shot bias (2026-11-16, failed; `docs/polymarket-bias/`)
+Are long shots overpriced (Snowberg & Wolfers; Page & Clemen)? 1,076 markets in 608 events first seen Oct 26 to Nov 14 2026,
+each counted once at its first stored price, error bars by whole event (`poly_bias.py`). Long shots happened a little less often
+than priced (1-5%: 1.3% vs 2.6%), every gap within luck. Selling long shots (buy No at the bid-side cost) made +0.4% a bet
+(95% range −1.5% to +2.1%); buying favourites +0.3%. Both fail the pre-set rules. Rerun possible later on markets first seen
+after 2026-11-16. Not live.
+
 ### Live paper record (from 2026-11-13; `docs/paper-record/`)
 Nothing traded. Three rules, version 1, fixed in `docs/paper-record/PLAN.md`: **leveraged trend** (SSO while SPY > its
 200-day average, else T-bills, traded at the next close), **10-month trend** (SPY while above its 10-month-end average,
@@ -1027,6 +1034,7 @@ Use `~/MarketData/.venv/bin/python` as Python.
 
 ## 17. Change log
 
+- **2026-11-16 (evening):** Polymarket long-shot bias tested and failed (`collectors/poly_bias.py`, `docs/polymarket-bias/`: 1,076 markets, both rules about +0.4% a bet after costs, within luck).
 - **2026-11-16 (evening):** event forecasts (`collectors/event_forecast.py`, `docs/event-forecasts/`; first one logged: Van Hollen wins the Dec 1 Senate leader vote, 3% against Polymarket's 9.3%), the owner's forecast journal through the same script, and the savings-path simulator on the Research tab (`collectors/savings_paths.py` writes `~/MarketData/savings/paths.json`).
 - **2026-11-16:** review of the whole project and `docs/ROADMAP.md`; Today tab (home page) and Research tab added; Scorecard shows live records first; this file's header shortened and this log started. Later the same day: "Risk right now" and "What's priced in" panels on the Today tab (roadmap step 3). Today tab filters: top stories need a market topic (Fed, economy, business, energy, geopolitics, US politics and so on) and drop films, celebrities and crime trials; betting markets drop crypto and novelty bets (tweet counts, press-office timing and the like).
 - **2026-11-13 and earlier** (newest first, as recorded in the old header):

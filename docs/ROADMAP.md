@@ -58,7 +58,7 @@ hours a week it deserves. This sets the order of step 3.
 - **The 50-signal stack:** about 50 published signals on S&P 500 stocks (prices, options, company
   accounts from SEC filings, earnings events), signs fixed from the papers, equal weights, one backtest,
   then the live paper record. Needs the owner's OK and a contact email for the SEC's download rules.
-- **Polymarket bias test:** are long shots overpriced? Uses data already collected.
+- **Polymarket bias test:** **done 2026-11-16, failed** (`docs/polymarket-bias/`). Prices were close to fair; both trading rules made about nothing after costs. A clean rerun is possible in six months on markets first seen after 2026-11-16.
 - Review every quarter. Retire anything that isn't earning its place (the gamma tracker makes about one
   prediction a week, so its 30-prediction verdict is more than six months away).
 

@@ -101,6 +101,11 @@
      "idea": "Rotate among 22 country funds by momentum, value, low volatility or trend.",
      "result": "Trend across countries made 4.4% a year in 2011-2026 against SPY's 14.0%. Country momentum lost 2.9% a year.",
      "lesson": "It looked great in 1997-2010, which was US stocks' lost decade.",
-     "doc": "docs/countries/README.md"}
+     "doc": "docs/countries/README.md"},
+    {"id": "polymarket-bias", "date": "2026-11-16", "name": "Polymarket long-shot bias", "area": "Betting markets", "versions": 2, "verdict": "failed",
+     "idea": "Long shots are said to be overpriced in betting markets. Sell them (or buy heavy favourites) and hold to the end.",
+     "result": "1,076 markets over three weeks. Long shots came in slightly less often than priced (1.3% against 2.6%), within luck. After the bid-ask cost both rules made about +0.4% a bet, no different from zero.",
+     "lesson": "Short-lived Polymarket prices were close to fair. Could be rerun in six months on markets first seen after Nov 16.",
+     "doc": "docs/polymarket-bias/README.md"}
   ]
 }
