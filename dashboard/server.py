@@ -996,6 +996,41 @@ def _risk() -> dict:
             "since": dates[199], "horizon_days": 21}
 
 
+def _gauges() -> dict:
+    """Economy gauges from collectors/macro_gauges.py: latest readings with enough history to say
+    where each stands. Context only; nothing here times the market."""
+    with db() as conn:
+        if not table_exists(conn, "macro_series"):
+            return {"ready": False}
+        s = {}
+        for r in conn.execute("SELECT series, date, value FROM macro_series WHERE source = 'fred-gauges' ORDER BY series, date"):
+            s.setdefault(r[0], []).append((r[1], r[2]))
+    if len(s) < 8:
+        return {"ready": False}
+
+    def last(k, back=0):
+        return s[k][-1 - back]
+
+    def yoy(k):
+        return (s[k][-1][1] / s[k][-13][1] - 1) * 100
+
+    curve = [v for _, v in s["T10Y3M"]]
+    inverted_days = sum(1 for v in curve[-250:] if v < 0)
+    claims = [v for _, v in s["ICSA"]]
+    claims4, claims4_year = sum(claims[-4:]) / 4, sum(claims[-56:-52]) / 4
+    core, ff = yoy("CPILFESL"), last("DFF")[1]
+    hy = [v for _, v in s["BAMLH0A0HYM2"]]
+    return {"ready": True,
+            "curve": {"date": last("T10Y3M")[0], "value": last("T10Y3M")[1], "inverted_days_last_year": inverted_days},
+            "sahm": {"date": last("SAHMREALTIME")[0], "value": last("SAHMREALTIME")[1]},
+            "unemployment": {"date": last("UNRATE")[0], "value": last("UNRATE")[1], "year_ago": last("UNRATE", 12)[1]},
+            "claims": {"date": last("ICSA")[0], "avg4": claims4, "year_ago": claims4_year},
+            "inflation": {"date": last("CPIAUCSL")[0], "all": yoy("CPIAUCSL"), "core": core,
+                          "core_3m_annual": ((s["CPILFESL"][-1][1] / s["CPILFESL"][-4][1]) ** 4 - 1) * 100},
+            "fed": {"date": last("DFF")[0], "rate": ff, "real": ff - core},
+            "credit": {"date": last("BAMLH0A0HYM2")[0], "value": hy[-1], "low": min(hy), "high": max(hy), "since": s["BAMLH0A0HYM2"][0][0]}}
+
+
 def _priced_in() -> dict:
     """What markets expect: SPY's options-implied move for coming expirations, and the busiest
     macro, politics and geopolitics betting markets with their leading outcomes."""
@@ -1046,7 +1081,7 @@ def _today() -> dict:
                        and not NOISE.search(f"{m.get('event_title') or ''} {m.get('question') or ''}")][:10], "movers_asof": ev["fetched_at"], "calendar": fed,
             "jobs": {"total": len(jobs), "bad": [j for j in jobs if j["status"] in BAD_RUN]},
             "db_mb": round(DB_PATH.stat().st_size / 1e6, 1),
-            "risk": cached("risk", 3600, _risk), "priced": cached("priced", 300, _priced_in)}
+            "risk": cached("risk", 3600, _risk), "gauges": cached("gauges", 3600, _gauges), "priced": cached("priced", 300, _priced_in)}
 
 
 SAVINGS_PATH = Path.home() / "MarketData" / "savings" / "paths.json"

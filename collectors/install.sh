@@ -20,6 +20,7 @@
 #   politics    every hour at :25, every day   political game machine: prices, headlines, rebuild (past prices at 2:25 am)
 #   news        every 15 min (:02, :17, :32, :47), every day   headlines from ~80 feeds, grouped into stories
 #   shipping    every day 09:40 and 19:40   ships through the 28 chokepoints (IMF PortWatch)
+#   gauges      every day 09:12             economy gauges from FRED (yield curve, Sahm rule, jobs, inflation, credit)
 #   spxmove     Mon-Fri 16:50, 18:20, 20:50, plus 08:05   S&P 500 move-size model: S&P and VIX history, Fed/CPI/jobs
 #               calendar, resolve yesterday's prediction, predict the next trading day (later runs only retry)
 #   direction   Mon-Fri 18:40   stock direction model: resolve last week's predictions; on a week's last trading
@@ -36,7 +37,7 @@ PROJECT=${HERE:h}
 DATA=~/MarketData
 AGENTS=~/Library/LaunchAgents
 PREFIX=com.marketdashboard.options
-JOBS=(daily bars snapshot backup positioning spreads events watchdog briefing strategy politics spxmove direction news shipping paper dashboard)
+JOBS=(daily bars snapshot backup positioning spreads events watchdog briefing strategy politics spxmove direction news shipping paper gauges dashboard)
 
 for job in $JOBS; do
   launchctl bootout gui/$UID/$PREFIX.$job 2>/dev/null || true
@@ -50,7 +51,7 @@ $DATA/.venv/bin/python -c "import truststore, yfinance, bs4, lxml" 2>/dev/null |
 cp $HERE/options_collector.py $HERE/positioning_collector.py $HERE/backfill_alpaca.py $HERE/restore_backup.py \
    $HERE/spreads_collector.py $HERE/events_collector.py $HERE/watchdog.py $HERE/briefing.py \
    $HERE/scoring.py $HERE/strategy_collector.py $HERE/politics_job.py $HERE/ledger.py $HERE/spx_move.py \
-   $HERE/news_collector.py $HERE/shipping_collector.py $HERE/stock_direction.py $HERE/paper_record.py $DATA/app/
+   $HERE/news_collector.py $HERE/shipping_collector.py $HERE/stock_direction.py $HERE/paper_record.py $HERE/macro_gauges.py $DATA/app/
 cp $HERE/../shared/watchlist.json $HERE/../shared/strategy.json $HERE/../shared/release_dates.json $HERE/../shared/news_feeds.json $HERE/../shared/source_ratings.json \
    $HERE/../shared/sp100.json $HERE/../shared/stock_direction_live.json $DATA/app/
 mkdir -p $DATA/politics/data $DATA/politics/outputs $DATA/politics/kalshi
@@ -81,6 +82,7 @@ schedules = {  # job -> (script path, arguments, launchd calendar entries or Non
     "news": (f"{data}/app/news_collector.py", [], [{"Minute": m} for m in (2, 17, 32, 47)]),
     "shipping": (f"{data}/app/shipping_collector.py", [], [{"Hour": 9, "Minute": 40}, {"Hour": 19, "Minute": 40}]),
     "paper": (f"{data}/app/paper_record.py", [], weekdays((9, 10), (16, 40), (20, 40))),
+    "gauges": (f"{data}/app/macro_gauges.py", [], [{"Hour": 9, "Minute": 12}]),
     "dashboard": (f"{project}/dashboard/server.py", [], None),
 }
 for job, (script, args, cal) in schedules.items():

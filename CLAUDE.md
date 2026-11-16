@@ -48,6 +48,8 @@ the roadmap's step 3 or 4 needs the owner's OK before building.
   the repo (no job, no `install.sh`). One JSON file per forecast in `docs/event-forecasts/` (the evidence, in git); the
   chance must come from a written rule and sources, never from the market price it's scored against. `"who": "owner"`
   logs the owner's own forecast. **Check `event_forecast.py due` when asked about results, and resolve by hand.**
+- Economy gauges (Today tab, since 2026-11-16): `collectors/macro_gauges.py` (job `gauges`, daily 09:12; FRED into
+  `macro_series`, source `fred-gauges`). Shown as context only: never present them as a stock-timing signal.
 - Savings-path simulator (Research tab): `collectors/savings_paths.py` writes `~/MarketData/savings/paths.json` (run by
   hand after French data is refreshed); the browser does the what-ifs. History replayed, never called a forecast.
 - Scorecard tab: every new prediction model logs through `collectors/ledger.py` (the prediction ledger:

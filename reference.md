@@ -105,7 +105,7 @@ and no NVDA/AMD bars are stored for the Spreads tab. It may have been removed wi
 
 ### The jobs (all times Eastern, Mac local time)
 
-Seventeen launchd agents, all named `com.marketdashboard.options.*`, created by `collectors/install.sh`.
+Eighteen launchd agents, all named `com.marketdashboard.options.*`, created by `collectors/install.sh`.
 
 | Job | When | Does |
 |---|---|---|
@@ -117,6 +117,7 @@ Seventeen launchd agents, all named `com.marketdashboard.options.*`, created by 
 | `strategy` | Every 5 min, 09:25–16:30, Mon–Fri | Gamma breakout tracker |
 | `spxmove` | 16:50, 18:20, 20:50 and 08:05, Mon–Fri | S&P move-size model: refresh data, resolve yesterday, predict tomorrow (only once) |
 | `direction` | 18:40 Mon–Fri | Stock direction model: resolve predictions whose week has closed; on a week's last trading day (normally Tuesday), download the S&P 500 stocks' options (about an hour), recompute implied volatility, predict next week (`stock_direction.py live`) |
+| `gauges` | 09:12 every day | Economy gauges from FRED (`macro_gauges.py`): 10-year minus 3-month yield, Sahm rule, unemployment, jobless claims, CPI and core CPI, Fed funds rate, junk-bond spread, into `macro_series` (source `fred-gauges`). For the Today tab; context only, not a market signal |
 | `paper` | 09:10, 16:40, 20:40, Mon–Fri | Live paper record (`paper_record.py`): log the trend rules' positions before the next day's close and the pre-Fed window days ahead; mark finished days against SPY. 09:10 catches up a missed evening |
 | `events` | Hourly at :05, every day | Polymarket events |
 | `politics` | Hourly at :25, every day (past prices at 02:25) | Political machine: prices, headlines, rebuild |
@@ -142,7 +143,7 @@ panels stack. Charts are TradingView Lightweight Charts 4.2.0, stored locally.
 
 | Tab | What it shows |
 |---|---|
-| **Today** | The home page (opens first). Market now: SPY and its move, trend against the 200-day average, VIX, the move-size model's expected range for the day, the next scheduled news and the Fed decision as Polymarket prices it. Every live test in one table (what it's doing now, record, verdict, what a verdict needs). **Risk right now**: how often the S&P 500 went on to fall 5% or 10% within 21 trading days after days like today (same trend, same VIX band), every day since 1990; it describes history and hasn't been tested as a prediction. **What's priced in**: SPY's options-implied move for about a week, a month and two months, and the busiest macro, politics and geopolitics betting markets. Top well-sourced stories of the last 24 hours, the biggest betting-market moves, the Fed/CPI/jobs calendar, and whether data collection is healthy. Reads other tabs' records; decides nothing |
+| **Today** | The home page (opens first). Market now: SPY and its move, trend against the 200-day average, VIX, the move-size model's expected range for the day, the next scheduled news and the Fed decision as Polymarket prices it. Every live test in one table (what it's doing now, record, verdict, what a verdict needs). **Risk right now**: how often the S&P 500 went on to fall 5% or 10% within 21 trading days after days like today (same trend, same VIX band), every day since 1990; it describes history and hasn't been tested as a prediction. **Economy gauges**: the Sahm recession rule, the yield curve, unemployment, jobless claims, inflation, the Fed rate against inflation and junk-bond stress (from FRED, daily; context for big decisions, not a market signal). **What's priced in**: SPY's options-implied move for about a week, a month and two months, and the busiest macro, politics and geopolitics betting markets. Top well-sourced stories of the last 24 hours, the biggest betting-market moves, the Fed/CPI/jobs calendar, and whether data collection is healthy. Reads other tabs' records; decides nothing |
 | **Options** | Click any symbol (or type any ticker): open interest by strike, today's volume by strike, IV by strike, per-expiration call/put OI and volume, put/call ratios, at-the-money IV and implied move. Price candles (1D to 5Y), the full live options chain, and a chart of any single contract with its greeks and breakeven. S&P dealer gamma (12 months) and CFTC positioning. Universal watchlist (every stock with data) and your own named watchlists |
 | **Spreads** | Relative-value pairs: ratio with 50/200-day averages, z-score, 1-year percentile, returns per leg. "Any pair" lets you type two tickers; **Save** adds it to `pairs.json` |
 | **Gamma** | The breakout tracker: each stock's call wall, put wall and gamma flip, a 5-minute chart with those levels, breakouts in their 30-minute hold, every breakout logged with its grades, and a scorecard. Live and replay kept apart |
@@ -1034,6 +1035,7 @@ Use `~/MarketData/.venv/bin/python` as Python.
 
 ## 17. Change log
 
+- **2026-11-16 (evening):** economy gauges on the Today tab and the new daily job `gauges` (`collectors/macro_gauges.py`, FRED series into `macro_series` with source `fred-gauges`).
 - **2026-11-16 (evening):** Polymarket long-shot bias tested and failed (`collectors/poly_bias.py`, `docs/polymarket-bias/`: 1,076 markets, both rules about +0.4% a bet after costs, within luck).
 - **2026-11-16 (evening):** event forecasts (`collectors/event_forecast.py`, `docs/event-forecasts/`; first one logged: Van Hollen wins the Dec 1 Senate leader vote, 3% against Polymarket's 9.3%), the owner's forecast journal through the same script, and the savings-path simulator on the Research tab (`collectors/savings_paths.py` writes `~/MarketData/savings/paths.json`).
 - **2026-11-16:** review of the whole project and `docs/ROADMAP.md`; Today tab (home page) and Research tab added; Scorecard shows live records first; this file's header shortened and this log started. Later the same day: "Risk right now" and "What's priced in" panels on the Today tab (roadmap step 3). Today tab filters: top stories need a market topic (Fed, economy, business, energy, geopolitics, US politics and so on) and drop films, celebrities and crime trials; betting markets drop crypto and novelty bets (tweet counts, press-office timing and the like).

@@ -80,6 +80,23 @@ document.addEventListener("click", (e) => {
     badge($("#td-priced-badge"), p.snapshot_ts, 90, p.snapshot_ts ? `Options ${ago(p.snapshot_ts)}` : "No options data");
   }
 
+  function drawEcon(d) {
+    const g = d.gauges;
+    if (!g?.ready) { $("#td-econ").innerHTML = `<div class="stat"><small>Economy gauges</small><strong class="dim">–</strong><em>first run pending</em></div>`; return; }
+    const month = (x) => new Date(`${x}T12:00:00-05:00`).toLocaleDateString("en-US", { timeZone: "America/New_York", month: "short", year: "numeric" });
+    const c = g.curve, u = g.unemployment, cl = g.claims, i = g.inflation, f = g.fed, cr = g.credit;
+    const du = u.value - u.year_ago, dc = (cl.avg4 / cl.year_ago - 1) * 100;
+    $("#td-econ").innerHTML = [
+      stat("Recession rule (Sahm)", fixed(g.sahm.value, 2), `${g.sahm.value >= 0.5 ? "triggered: 0.50 or more has marked every recession's start" : "not triggered (0.50 or more does)"} · ${esc(month(g.sahm.date))}`, g.sahm.value >= 0.5 ? "neg" : g.sahm.value >= 0.3 ? "" : "pos"),
+      stat("Yield curve", `${signed(c.value, 2, " pts")}`, `${c.value < 0 ? "negative: a recession warning" : "positive (normal)"}${c.inverted_days_last_year ? ` · negative on ${c.inverted_days_last_year} of the last 250 days` : ""}`, c.value < 0 ? "neg" : ""),
+      stat("Unemployment", `${fixed(u.value, 1)}%`, `${signed(du, 1, " pts")} from a year ago · ${esc(month(u.date))}`, du >= 0.5 ? "neg" : ""),
+      stat("Jobless claims", `${big(cl.avg4)} a week`, `${signed(dc, 0)} from a year ago (4-week average)`, dc >= 15 ? "neg" : ""),
+      stat("Inflation", `${fixed(i.all, 1)}%`, `core ${fixed(i.core, 1)}% · core's last 3 months at ${fixed(i.core_3m_annual, 1)}% a year · ${esc(month(i.date))}`, i.core >= 3 ? "neg" : ""),
+      stat("Fed rate", `${fixed(f.rate, 2)}%`, `${signed(f.real, 1, " pts")} ${f.real >= 0 ? "above" : "below"} core inflation`),
+      stat("Junk-bond stress", `${fixed(cr.value, 2)} pts`, `extra yield over Treasuries · 3-year range ${fixed(cr.low, 1)} to ${fixed(cr.high, 1)}`, cr.value >= 6 ? "neg" : ""),
+    ].join("");
+  }
+
   function drawNews(d) {
     $("#td-news").innerHTML = d.stories.length ? d.stories.map((s) => `<div class="nw-item">
         <div class="nw-head"><span class="nw-trust ${esc(String(s.trust_label || "").toLowerCase())}" title="${esc(`How well sourced this story is, not whether it's true${s.trust_why ? ` (${s.trust_why})` : ""}`)}">${esc(s.trust_label || "")}</span>
@@ -125,6 +142,6 @@ document.addEventListener("click", (e) => {
     drawMarket(d);
     $("#td-tests-n").textContent = d.tests.length;
     $("#td-tests").innerHTML = liveTestsTable(d.tests);
-    drawRisk(d); drawPriced(d); drawNews(d); drawMovers(d); drawCalendar(d); drawSystem(d);
+    drawRisk(d); drawPriced(d); drawEcon(d); drawNews(d); drawMovers(d); drawCalendar(d); drawSystem(d);
   };
 })();

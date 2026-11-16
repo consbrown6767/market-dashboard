@@ -346,3 +346,4 @@ tr[data-goto]:hover td { background: var(--overlay-subtle); }
 .rs-doc { font-size: 9px; letter-spacing: .03em; }
 #td-market.stats { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
 tr.td-here td { background: var(--overlay-light); color: var(--text); font-weight: 700; }
+#td-econ.stats { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }

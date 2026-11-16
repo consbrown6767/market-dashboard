@@ -51,7 +51,7 @@ hours a week it deserves. This sets the order of step 3.
 | Savings-path simulator on the 100 years of data | **Done 2026-11-16** (Research tab, "Savings paths"): a monthly saving replayed from every start month since 1928, in T-bills, the market, 2x always and leveraged trend. Series from `collectors/savings_paths.py` |
 | Forecast journal: the owner's own predictions, scored like the models | **Done 2026-11-16** (backend): a forecast file with `"who": "owner"` goes to the ledger as "Your forecast journal". Tell Claude the event and your chance; no entry form on the page, because the server is read-only |
 | Fast event forecasts scored against Polymarket (leadership votes, Fed meetings, confirmations) | **Done 2026-11-16**: `collectors/event_forecast.py`, evidence files in `docs/event-forecasts/`. First forecast: Van Hollen wins the Dec 1 Senate leader vote, 3% against the market's 9.3%. **Resolve by hand after Dec 1** (`event_forecast.py due`, then `resolve`) |
-| Recession and inflation gauges | Not built. Needs a new daily data job (FRED: yield curve, unemployment, inflation), so it waits for the owner's OK |
+| Recession and inflation gauges | **Done 2026-11-16** (Today tab, "Economy gauges"): Sahm recession rule, yield curve, unemployment, jobless claims, inflation, the Fed rate against inflation, junk-bond stress. New daily job `gauges` (`collectors/macro_gauges.py`, 09:12) |
 
 ### Step 4. One research bet at a time
 
