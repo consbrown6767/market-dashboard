@@ -12,7 +12,7 @@
   };
   const BASELINE_NAMES = { recent: "Recent moves", vix: "VIX implied move", wide: "Wide range", base_rate: "Base rate (how often stocks beat SPY)", price_only: "Last week's move only" };
   const VERDICTS = { better: ["fresh", "Beats it"], worse: ["down", "Worse"], "no clear difference": ["stale", "No clear difference"], "too few": ["", "Too few to judge"] };
-  const state = { recentMode: "all" };
+  const state = { recentMode: "all", backtests: false };  // live records first; backtests on request
 
   // A bare date ("2026-11-09") would be read as UTC midnight, the evening before in New York.
   const day = (ts) => (ts ? new Date(ts.length === 10 ? `${ts}T12:00:00-05:00` : ts).toLocaleDateString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", year: "numeric" }) : "–");
@@ -33,7 +33,8 @@
   function ledgerRows(d) {
     const rows = [], seen = new Set();
     for (const m of d.ledger?.models ?? []) {
-      seen.add(m.model);
+      if (m.mode === "backtest" && !state.backtests) continue;
+      if (m.mode !== "backtest") seen.add(m.model);
       const info = MODELS[m.model] || { name: m.model, what: "" };
       const bases = Object.entries(m.baselines);
       const first = `<td><b>${esc(info.name)}</b> <span class="dim">v${esc(m.version)}${m.mode === "backtest" ? " · backtest" : ""}</span></td>
@@ -96,6 +97,12 @@
     const rows = [...ledgerRows(d), gammaRow(d), politicsRow(d)];
     $("#sc-summary").innerHTML = `<table><thead><tr><th>Model</th><th>What it predicts</th><th>Live since</th><th>Predictions</th><th>Resolved</th>
       <th>Model's result</th><th>Simple guess it must beat</th><th>Verdict</th><th>Record</th></tr></thead><tbody>${rows.join("")}</tbody></table>`;
+    const nBack = (d.ledger?.models ?? []).filter((m) => m.mode === "backtest").length;
+    const bt = $("#sc-backtests");
+    bt.hidden = !nBack;
+    bt.textContent = state.backtests ? "Hide backtests" : `Show backtests (${nBack})`;
+    bt.classList.toggle("active", state.backtests);
+    bt.onclick = () => { state.backtests = !state.backtests; drawSummary(d); };
     const v = d.ledger?.verify;
     const b = $("#sc-badge");
     if (!d.ledger) { b.className = "badge"; b.textContent = "Ledger empty"; b.title = "No model has written to the ledger yet"; }

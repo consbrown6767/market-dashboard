@@ -59,9 +59,9 @@ function makeChart(el, opts = {}) {
 
 // ---------- tabs, clock, status
 const loaders = {};
-let current = "options";
+let current = "today";
 function show(view) {
-  current = loaders[view] ? view : "options";
+  current = loaders[view] ? view : "today";
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.view === current));
   document.querySelectorAll(".view").forEach((v) => v.classList.toggle("active", v.id === `view-${current}`));
   history.replaceState(null, "", `#${current}`);
@@ -846,7 +846,7 @@ $("#reset-layout").addEventListener("click", () => {
 // ---------- boot + auto-refresh every minute
 // (after the other tabs' scripts have added their loaders)
 document.addEventListener("DOMContentLoaded", () => {
-  show((location.hash || "#options").slice(1));
+  show((location.hash || "#today").slice(1));
   refreshStatus().catch(showError);
   setInterval(() => { refreshStatus().catch(showError); loaders[current]().catch(showError); }, 60_000);
 });

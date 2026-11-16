@@ -335,3 +335,13 @@ tr.clickable { cursor: pointer; }
 .nw-feeds { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 10px; }
 .nw-feed { font-size: 10px; color: var(--text-dim); border: 1px solid var(--border); padding: 1px 6px; }
 .nw-feed.bad { color: var(--critical); border-color: color-mix(in srgb, var(--critical) 45%, var(--border)); }
+
+/* ---------- Today and Research tabs */
+table.tests td { vertical-align: top; }
+table.tests td.wrap { max-width: 420px; color: var(--text-secondary); line-height: 1.4; }
+table.tests td.wrap b { color: var(--text); }
+tr[data-goto] { cursor: pointer; }
+tr[data-goto]:hover td { background: var(--overlay-subtle); }
+.rs-lesson { font-size: 11px; color: var(--text-secondary); padding: 4px 0 4px 10px; border-left: 2px solid var(--border-strong); margin-top: 6px; line-height: 1.4; }
+.rs-doc { font-size: 9px; letter-spacing: .03em; }
+#td-market.stats { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }

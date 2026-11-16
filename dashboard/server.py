@@ -849,7 +849,134 @@ def api_shipping(q):
     return {"ready": True, "latest_day": last, "ports": ports, "detail": detail, "id": pid}
 
 
-ROUTES = {"/api/health": api_health, "/api/options": api_options, "/api/option_detail": api_option_detail,
+# ---------- today and research tabs (plain summaries of records the other tabs already hold; decide nothing)
+
+RESEARCH_PATH = PROJECT / "shared" / "research.json"
+HOLD_NAMES = {"SSO": "SSO (2x S&P 500)", "SPY": "SPY", "cash": "cash (T-bills)"}
+BAD_RUN = ("failed", "partial", "stopped")
+
+
+def _day_text(iso: str) -> str:
+    d = date.fromisoformat(iso[:10])
+    return f"{d:%b} {d.day}"
+
+
+def _ledger_verdict(m: dict) -> str:
+    verdicts = {b["verdict"] for b in m["baselines"].values()}
+    if not verdicts or "too few" in verdicts:
+        return "too early"
+    if verdicts == {"better"}:
+        return "beats its simple guesses"
+    return "worse than a simple guess" if "worse" in verdicts else "no clear difference"
+
+
+def _live_tests(conn) -> list[dict]:
+    """One row per thing on a live test: what it's doing now, its record so far, its verdict and
+    what a verdict needs. Reads the same records as the Scorecard tab."""
+    out = []
+    for e in paper_record.summary(conn).get("strategies", []):
+        lp = e["latest_position"]
+        if e["kind"] == "fed":
+            now = (f"Next window: {_day_text(lp['buy_at'])} 2 pm to {_day_text(lp['decision_day'])} 2 pm" if lp
+                   else "Waiting for the next Fed meeting to come within two weeks")
+            record = (f"{e['meetings']} meeting{'s' if e['meetings'] != 1 else ''}, average {e['avg_window'] * 100:+.2f}% a window"
+                      if e.get("meetings") else "No meeting finished yet")
+            needs = "30 meetings"
+        else:
+            now = f"Holding {HOLD_NAMES.get(lp['hold'], lp['hold'])} from the {_day_text(lp['trade_date'])} close" if lp else "No position yet"
+            record = (f"${e['rule_10k']:,.0f} against SPY's ${e['spy_10k']:,.0f} from $10,000, since {_day_text(e['first_day'])}"
+                      if e["marks"] else "Starts at its first close")
+            needs = "3 years"
+        out.append({"id": f"paper-{e['strategy']}", "name": e["name"], "what": e["what"], "now": now, "record": record,
+                    "verdict": e["verdict"], "needs": needs, "tab": "scorecard"})
+
+    live = [m for m in ledger.summary(conn) if m["mode"] == "live"] if table_exists(conn, "predictions") else []
+    for m in live:
+        if m["model"] == "spx-move":
+            s = _spx_record(conn, 5).get("latest")
+            now = (f"90% range for {_day_text(s['day'])}: {s['q']['0.05']:+.2f}% to {s['q']['0.95']:+.2f}%" if s and s["outcome"] is None
+                   else "Next range is made this evening")
+            vix = m["baselines"].get("vix", {})
+            record = f"{m['resolved']} of {m['logged']} predictions resolved"
+            if vix.get("skill") is not None:
+                record += f". Error {abs(vix['skill']) * 100:.0f}% {'smaller' if vix['skill'] >= 0 else 'bigger'} than the VIX-implied guess so far"
+            out.append({"id": "spx-move", "name": "S&P 500 move size", "what": "How big tomorrow's S&P 500 move will be (a range, not a direction)",
+                        "now": now, "record": record, "verdict": _ledger_verdict(m), "needs": f"{ledger.MIN_RESOLVED} results", "tab": "scorecard"})
+        elif m["model"] == "stock-direction":
+            four = m["version"].endswith("@sp400")
+            base = m["baselines"].get("base_rate", {})
+            record = f"{m['resolved']:,} of {m['logged']:,} predictions resolved"
+            if base.get("skill") is not None:
+                record += f". Error {abs(base['skill']) * 100:.1f}% {'smaller' if base['skill'] >= 0 else 'bigger'} than the base rate so far"
+            out.append({"id": f"stock-direction-{m['version']}", "name": f"Stock direction v{m['version']}",
+                        "what": f"Each week, the chance each {'of the other 400 S&P 500 stocks' if four else 'S&P 100 stock'} beats SPY",
+                        "now": f"{m['logged'] - m['resolved']:,} predictions open", "record": record,
+                        "verdict": _ledger_verdict(m), "needs": f"{ledger.MIN_RESOLVED} weeks", "tab": "scorecard"})
+    if not any(m["model"] == "stock-direction" for m in live):
+        out.append({"id": "stock-direction", "name": "Stock direction", "what": "Each week, the chance each S&P 500 stock beats SPY, from options prices",
+                    "now": "First weekly predictions are made on its next Tuesday evening run", "record": "Not started",
+                    "verdict": "too early", "needs": f"{ledger.MIN_RESOLVED} weeks", "tab": "scorecard"})
+
+    g = _gamma_record()
+    if g.get("ready"):
+        t = g["table"]
+        graded = sum(t[k]["eod"]["graded"] for k in ("strong", "prediction"))
+        held = sum(t[k]["eod"]["held"] for k in ("strong", "prediction"))
+        out.append({"id": "gamma", "name": "Gamma breakout tracker", "what": "Whether a breakout above the biggest call strike keeps holding",
+                    "now": f"{g['breakouts']} breakouts watched over {g['live_days']} trading days",
+                    "record": f"{g['predictions']} prediction{'s' if g['predictions'] != 1 else ''}; {held} of {graded} held to the close",
+                    "verdict": "too early", "needs": f"{ledger.MIN_RESOLVED} predictions", "tab": "gamma"})
+    p = _politics_record()
+    if p.get("ready"):
+        out.append({"id": "politics", "name": "Political game machine", "what": "Chances of 2028 election outcomes, against betting markets",
+                    "now": f"{p['open_questions']} questions open", "record": f"{p['forecasts']} forecasts logged, {p['resolved']} settled",
+                    "verdict": "too early", "needs": "elections to settle (2028)", "tab": "politics"})
+    return out
+
+
+def _today() -> dict:
+    now = datetime.now(ET)
+    today = now.date().isoformat()
+    since = (now - timedelta(hours=24)).isoformat(timespec="seconds")
+    with db() as conn:
+        spy = conn.execute("SELECT ts, price, prev_close FROM stock_snapshots WHERE symbol = 'SPY' ORDER BY run_id DESC LIMIT 1").fetchone()
+        past = [r[0] for r in conn.execute("SELECT close FROM daily_bars_adj WHERE symbol = 'SPY' AND date < ? ORDER BY date DESC LIMIT 200", (today,))]
+        vix = conn.execute("SELECT date, close FROM index_daily WHERE symbol = 'VIX' ORDER BY date DESC LIMIT 1").fetchone() \
+            if table_exists(conn, "index_daily") else None
+        latest = _spx_record(conn, 5).get("latest")
+        fed = _fed_panel(conn)
+        tests = _live_tests(conn)
+        stories = rows(conn, """SELECT id, title, link, first_published, n_sources, topics, alert, trust, trust_label, trust_why
+                                FROM news_stories WHERE first_published >= ? AND (trust >= 70 OR trust_label = 'Official')
+                                ORDER BY importance DESC, last_seen DESC LIMIT 10""", since) if table_exists(conn, "news_stories") else []
+        newest_news = conn.execute("SELECT max(first_seen) FROM news_items").fetchone()[0] if table_exists(conn, "news_items") else None
+        jobs = rows(conn, """SELECT r.job, r.started_at, r.status, substr(r.detail, 1, 160) AS detail
+                             FROM runs r JOIN (SELECT job, MAX(id) id FROM runs GROUP BY job) l ON l.id = r.id
+                             WHERE r.started_at >= ? ORDER BY r.job""", (now - timedelta(days=4)).isoformat(timespec="seconds"))
+    ev = api_events({})
+    avg200 = sum(past) / len(past) if len(past) == 200 else None
+    market = {"spy": dict(spy) if spy else None, "avg200": avg200, "vix": dict(vix) if vix else None,
+              "range": {"day": latest["day"], "q": latest["q"], "outcome": latest["outcome"], "is_today": latest["day"] == today} if latest else None}
+    return {"today": today, "market": market, "tests": tests, "stories": stories, "newest_news": newest_news,
+            "movers": ev["movers"][:10], "movers_asof": ev["fetched_at"], "calendar": fed,
+            "jobs": {"total": len(jobs), "bad": [j for j in jobs if j["status"] in BAD_RUN]},
+            "db_mb": round(DB_PATH.stat().st_size / 1e6, 1)}
+
+
+def api_today(q):
+    return cached("today", 45, _today)
+
+
+def api_research(q):
+    data = json.loads(RESEARCH_PATH.read_text())
+
+    def tests():
+        with db() as conn:
+            return _live_tests(conn)
+    return {"lessons": data["lessons"], "studies": data["studies"], "tests": cached("live-tests", 45, tests)}
+
+
+ROUTES = {"/api/today": api_today, "/api/research": api_research, "/api/health": api_health, "/api/options": api_options, "/api/option_detail": api_option_detail,
           "/api/stock_bars": api_stock_bars, "/api/chain_expirations": api_chain_expirations, "/api/chain": api_chain,
           "/api/option_bars": api_option_bars, "/api/pairs": api_pairs, "/api/pair": api_pair, "/api/watchlists": api_watchlists,
           "/api/events": api_events, "/api/market_history": api_market_history,

@@ -1,8 +1,9 @@
 # Market Dashboard: the complete reference
 
-*Last updated 2026-11-13 (country stock-market rotation: 8 versions, both finalists fail; global bond strategies: 8 versions, one finalist, fails its vault; currency strategies, G10 and emerging markets: 20 versions, all six finalists fail their vaults; VRP confirmation: not confirmed, fails all three tests; math exploration: 15 versions of 8 methods, 2006-2026 held out; only the variance risk premium passed, weakly; live paper record started: leveraged trend, 10-month trend, pre-Fed drift; Fed calendar parser fixed and history reloaded; constant leverage tested: 2x more money but −98.7% in 1929-32, fails; monthly savers at 2x ahead in all 60 cohorts; Fed-day drift and Fed cycle tested: both faded after publication, Fed calendar gap found; earnings-week premium tested: failed; overnight-only investing and trend across many markets tested: both failed; round 4 and tournament of all 24 strategies: none beats SPY by the rules; 10-month trend safest, leveraged trend most money; pairs trading and macro timing models tested: both failed; risk budget model, stocks + Treasuries by equal risk, tested 1965-2026: failed; nine classic published strategies tested on 100 years: none beats the market, 10-month trend is safer; volatility-managed market model tested on 100 years of data: failed, not live; stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400; 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job; 2026-11-10: news outlet ratings and story trust; code moved to `~/Code/market-dashboard` and put in git; split table; nightly daily bars) by Claude. One place for everything about this project: what it is, the data,
-the four prediction models, the political game machine, how it all runs, and the rules agreed along
-the way. Numbers are as of the evening of Monday 2026-11-09 unless a date says otherwise.*
+*Last updated 2026-11-16 by Claude. One place for everything about this project: what it is, the data,
+the prediction models, the research, the political game machine, how it all runs, and the rules agreed
+along the way. What changed and when is in the change log (section 17). The plan from here is in
+`docs/ROADMAP.md`.*
 
 Kept up to date: any change to something described here is written into this file in the same piece
 of work (the rule is in `CLAUDE.md`). Fast-moving numbers (row counts, odds, results) are snapshots
@@ -17,25 +18,27 @@ and `politics/PLAN.md` (political machine).
 
 A private research dashboard on this Mac (http://127.0.0.1:8765) that gives a broad view of the
 market. Background jobs collect free data around the clock into one database. The page shows it in
-tabs. On top of the data sit three models that make predictions **before** the outcome is known and
-keep score honestly: an S&P 500 move-size model, a gamma breakout tracker for single stocks, and a
-political game machine for the 2028 election. Nothing here trades or bets. The point is to find out,
-with real records, whether any of these ideas know something the market doesn't.
+tabs, starting with a **Today** home screen. On top of the data sit models and trading rules that
+commit **before** the outcome is known and keep score honestly, and a research record of every idea
+tested. Nothing here trades or bets. After a review on 2026-11-16 the aim is decision support and
+forecasting, with the hunt for a market-beating model continuing as one bet at a time
+(`docs/ROADMAP.md`).
 
-## 2. Where things stand (2026-11-09)
+## 2. Where things stand (2026-11-16)
 
 | Piece | State |
 |---|---|
-| Data collection | Running since 2026-10-26. 747 recorded job runs: 744 ok, 1 failed, 1 partial, 1 stopped |
-| Database | 9.1 GB at `~/MarketData/options.db` on 2026-11-12 (was 3.7 GB before 11-11; +5.4 GB of S&P 500 options history). 186 GB free on the Mac |
+| Data collection | Running since 2026-10-26. About 2,200 recorded job runs, 18 not clean. 17 scheduled jobs |
+| Database | 10.8 GB at `~/MarketData/options.db` |
 | Watchlist | 72 symbols (stocks, sector and industry ETFs, bonds, commodities, global, crypto) |
-| S&P 500 move-size model | Built and backtested today. First live prediction logged at 8:50 pm for Tue 2026-11-10 (a CPI day): 90% range −2.19% to +1.97%, 50% range −0.64% to +0.94%. Tamper check ok |
-| Gamma breakout tracker | Live forward test started today. Day 1: three breakout attempts, no predictions (volume too low or failed hold) |
-| Political game machine | Rebuilds hourly. 509 forecasts logged (all on 2026-11-05), none resolved yet. Candidate ratings re-set from research on 11-10 (unreviewed) |
-| Scorecard / prediction ledger | Built today. Holds 3,151 backtest rows for the S&P model; live rows start tonight |
-| Stock direction model (added 2026-11-11) | Weekly chance each S&P 100 stock beats SPY, from options prices. Backtested on 2024-25, tuned (16 variants), sealed test on 2026: **no version reliably beats the base rate**; crash protection was the only input pointing the right way in both periods. Fresh test on the other 400 S&P 500 stocks (2026-11-12): crash protection pointed the right way again and lean-passed; five more research signals did nothing reliable. Three versions log live every Tuesday from 2026-11-17 (`1-learned`, `3-skew`, `3-skew@sp400`). ~90,000 backtest rows in the ledger |
+| Research | 19 studies, about 107 versions, each planned before its results (section 11 and the Research tab). One trading rule survived (leveraged trend); the 10-month trend is safer, not better |
+| S&P 500 move-size model | Live since 2026-11-09: 5 predictions, 4 resolved. Backtest beats both simple guesses |
+| Gamma breakout tracker | Live since 2026-11-09: 15 breakouts watched, 1 prediction. About one prediction a week |
+| Stock direction model | No version reliably beats the base rate. Three versions log live every Tuesday from 2026-11-17 |
+| Live paper record | Leveraged trend, 10-month trend and the pre-Fed window, from 2026-11-13. First daily marks 2026-11-16 |
+| Political game machine | Rebuilds hourly. 509 forecasts logged, none settle until 2028. Candidate ratings re-set from research on 11-10 (unreviewed) |
 | Alerts and daily update | Phone push via ntfy: problems every 30 min, a morning update at 10:00 |
-| News and shipping (added 2026-11-10) | Headlines from 83 sources every 15 min, grouped into stories, searchable; ships through 28 chokepoints daily, history from 2019. First run: 83 of 83 feeds answered, about 3,000 headlines from the last 3 days. News tab built |
+| News and shipping | Headlines from about 80 sources every 15 min, grouped into stories, searchable; ships through 28 chokepoints daily |
 
 ---
 
@@ -139,11 +142,13 @@ panels stack. Charts are TradingView Lightweight Charts 4.2.0, stored locally.
 
 | Tab | What it shows |
 |---|---|
+| **Today** | The home page (opens first). Market now: SPY and its move, trend against the 200-day average, VIX, the move-size model's expected range for the day, the next scheduled news and the Fed decision as Polymarket prices it. Every live test in one table (what it's doing now, record, verdict, what a verdict needs). Top well-sourced stories of the last 24 hours, the biggest betting-market moves, the Fed/CPI/jobs calendar, and whether data collection is healthy. Reads other tabs' records; decides nothing |
 | **Options** | Click any symbol (or type any ticker): open interest by strike, today's volume by strike, IV by strike, per-expiration call/put OI and volume, put/call ratios, at-the-money IV and implied move. Price candles (1D to 5Y), the full live options chain, and a chart of any single contract with its greeks and breakeven. S&P dealer gamma (12 months) and CFTC positioning. Universal watchlist (every stock with data) and your own named watchlists |
 | **Spreads** | Relative-value pairs: ratio with 50/200-day averages, z-score, 1-year percentile, returns per leg. "Any pair" lets you type two tickers; **Save** adds it to `pairs.json` |
 | **Gamma** | The breakout tracker: each stock's call wall, put wall and gamma flip, a 5-minute chart with those levels, breakouts in their 30-minute hold, every breakout logged with its grades, and a scorecard. Live and replay kept apart |
 | **Politics** | The political game machine in seven sections: Overview, Play the game, President, Senate and House, Strategy, Ratings, Scorecard |
-| **Scorecard** | Every model's record against its simple guess, with a verdict and a tamper check. The S&P model's range for the next trading day, its inputs, the next scheduled Fed/CPI/jobs news, and its last 120 ranges against what happened. Whether 90% ranges really catch 90%. The live paper record of three trading rules ($10k vs SPY, holdings, chain check) |
+| **Scorecard** | Every model's **live** record against its simple guess, with a verdict and a tamper check; backtests are behind a **Show backtests** button. The S&P model's range for the next trading day, its inputs, the next scheduled Fed/CPI/jobs news, and its last 120 ranges against what happened. Whether 90% ranges really catch 90%. The live paper record of three trading rules ($10k vs SPY, holdings, chain check) |
+| **Research** | Every idea tested: counts, what it adds up to, what made it to a live test, and one row per study (idea, versions tried, verdict, what happened, takeaway, where the write-up is). The list is `shared/research.json`: add an entry when a study finishes |
 | **News** | Top stories (headlines grouped by event, ranked by how many outlets carry them, weighted by each outlet's rating) with a trust badge (High/Medium/Low/Official: how well sourced, not whether true), each headline showing its outlet's 0-100 rating (from Media Bias/Fact Check and Ad Fontes; `shared/source_ratings.json`), latest headlines with topic filters (Fed and rates, economy, markets, business, tech and AI, energy, shipping, Russia and Ukraine, Middle East, China, US politics, world, crypto) and a search over every stored headline. Shipping chokepoints (last 7 days vs normal and a year ago, tankers, 6-month sparkline, full history chart). Hormuz, Bab el-Mandeb and the Kerch Strait are shown as "≥" (at least): many ships there turn trackers off, so the true number is higher. No estimate is added, because no free data can measure the dark ships. Fed and data calendar with Polymarket's odds for the next decision and the latest Fed statements. Feed health |
 | **Events** | Polymarket by group (macro and Fed, geopolitics, business and tech, politics, crypto, sports and other), 24-hour movers, what resolves this week, every event with its price history |
 | **Status** | Every job's last run, status and detail |
@@ -917,6 +922,9 @@ more data; short-interest data (no free daily source).
 
 ## 14. Open items and what's next
 
+- **The plan from here is `docs/ROADMAP.md`** (review of 2026-11-16): consolidate (done), then a decision layer
+  (risk panel, what's priced in, savings simulator, forecast journal, fast event forecasts), then one research bet
+  at a time. Each new piece needs your OK.
 - **Cboe's VIX timing:** on 2026-11-09 Cboe posted the day's VIX at 9:29 pm, after the last evening
   run (8:50 pm), so the first live prediction used Yahoo's VIX (flagged in its inputs; it matched Cboe's
   exactly). If that's normal, most predictions will. Cboe's figure replaces Yahoo's in `index_daily` on
@@ -1014,3 +1022,35 @@ Use `~/MarketData/.venv/bin/python` as Python.
 | **SIP / IEX** | Full-market stock data (all exchanges) vs one exchange's data |
 | **OPRA** | The official US options price feed (not available on Alpaca's free plan) |
 | **launchd** | The Mac's built-in scheduler that runs the background jobs |
+
+---
+
+## 17. Change log
+
+- **2026-11-16:** review of the whole project and `docs/ROADMAP.md`; Today tab (home page) and Research tab added; Scorecard shows live records first; this file's header shortened and this log started.
+- **2026-11-13 and earlier** (newest first, as recorded in the old header):
+  - country stock-market rotation: 8 versions, both finalists fail
+  - global bond strategies: 8 versions, one finalist, fails its vault
+  - currency strategies, G10 and emerging markets: 20 versions, all six finalists fail their vaults
+  - VRP confirmation: not confirmed, fails all three tests
+  - math exploration: 15 versions of 8 methods, 2006-2026 held out
+  - only the variance risk premium passed, weakly
+  - live paper record started: leveraged trend, 10-month trend, pre-Fed drift
+  - Fed calendar parser fixed and history reloaded
+  - constant leverage tested: 2x more money but −98.7% in 1929-32, fails
+  - monthly savers at 2x ahead in all 60 cohorts
+  - Fed-day drift and Fed cycle tested: both faded after publication, Fed calendar gap found
+  - earnings-week premium tested: failed
+  - overnight-only investing and trend across many markets tested: both failed
+  - round 4 and tournament of all 24 strategies: none beats SPY by the rules
+  - 10-month trend safest, leveraged trend most money
+  - pairs trading and macro timing models tested: both failed
+  - risk budget model, stocks + Treasuries by equal risk, tested 1965-2026: failed
+  - nine classic published strategies tested on 100 years: none beats the market, 10-month trend is safer
+  - volatility-managed market model tested on 100 years of data: failed, not live
+  - stock direction model: fresh test on the other 400 S&P 500 stocks, five more signals, crash protection live on the 400
+  - 2026-11-11: the stock direction model, its S&P 100 options history, and its weekly live job
+  - 2026-11-10: news outlet ratings and story trust
+  - code moved to `~/Code/market-dashboard` and put in git
+  - split table
+  - nightly daily bars
