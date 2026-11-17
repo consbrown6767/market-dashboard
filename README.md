@@ -32,7 +32,7 @@ Every study's plan was written and committed **before** its results, and each on
 - **Live paper record:** three trading rules are logged before each trade takes effect and scored
   daily against SPY. Nothing is actually traded.
 - **Dashboard:** a read-only Python server and a plain-JavaScript front end (TradingView Lightweight
-  Charts), with 11 tabs. Today is the home page.
+  Charts), with 10 tabs. Today is the home page.
 - **Research method:** plans fixed in advance, held-out "vault" years opened once and locked in code,
   realistic trading costs, and luck checks (bootstrap ranges, deflated Sharpe ratios).
 
