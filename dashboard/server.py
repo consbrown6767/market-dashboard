@@ -3,7 +3,9 @@
 Read-only: opens the database with mode=ro and never writes. Collectors are the only writers.
 (The exceptions, outside the database: saving or removing a spread edits shared/pairs.json, and
 editing a watchlist edits shared/watchlists.json.)
-Listens on 127.0.0.1 only (not reachable from other machines).
+Listens on the home network (0.0.0.0) since 2026-11-17, at the owner's request, so phones and other
+computers on the same Wi-Fi can open it. There's no login. Changes (saving a spread or a watchlist) are
+only accepted from this Mac itself. Set HOST=127.0.0.1 to go back to this-Mac-only.
 
 Run:  ~/MarketData/.venv/bin/python dashboard/server.py      then open http://127.0.0.1:8765
 (install.sh also runs it as an always-on background job.)
@@ -41,6 +43,8 @@ DB_PATH = Path.home() / "MarketData" / "options.db"
 POLITICS_DATA = Path.home() / "MarketData" / "politics" / "outputs" / "data.json"
 POLITICS_SUMMARY = POLITICS_DATA.with_name("summary.json")
 PORT = int(os.environ.get("PORT", "8765"))
+HOST = os.environ.get("HOST", "0.0.0.0")
+LOCAL = ("127.0.0.1", "::1", "::ffff:127.0.0.1")
 CONTENT_TYPES = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
                  ".js": "application/javascript; charset=utf-8", ".svg": "image/svg+xml", ".json": "application/json"}
 GROUP_ORDER = ["macro", "geopolitics", "business", "politics", "crypto", "other"]
@@ -1134,6 +1138,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         url = urlparse(self.path)
+        if self.client_address[0] not in LOCAL:  # other devices can look, not change anything
+            return self.send(403, b'{"error": "changes can only be made on the Mac running the dashboard"}', "application/json")
         if url.path not in POST_ROUTES:
             return self.send(404, b"not found", "text/plain")
         try:
@@ -1157,5 +1163,5 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print(f"Market Dashboard on http://127.0.0.1:{PORT}  (database {DB_PATH})", flush=True)
-    ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
+    print(f"Market Dashboard on http://{HOST}:{PORT}  (database {DB_PATH})", flush=True)
+    ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()

@@ -1,6 +1,6 @@
 # Market Dashboard: the complete reference
 
-*Last updated 2026-11-16 by Claude. One place for everything about this project: what it is, the data,
+*Last updated 2026-11-17 by Claude. One place for everything about this project: what it is, the data,
 the prediction models, the research, the political game machine, how it all runs, and the rules agreed
 along the way. What changed and when is in the change log (section 17). The plan from here is in
 `docs/ROADMAP.md`.*
@@ -154,7 +154,7 @@ panels stack. Charts are TradingView Lightweight Charts 4.2.0, stored locally.
 | **Events** | Polymarket by group (macro and Fed, geopolitics, business and tech, politics, crypto, sports and other), 24-hour movers, what resolves this week, every event with its price history |
 | **Status** | Every job's last run, status and detail |
 
-Pages refresh every minute. The server only listens on this Mac.
+Pages refresh every minute. Since 2026-11-17 the server listens on the home network, so a phone or computer on the same Wi-Fi can open http://Connors-Macbook-Pro-2.local:8765. There's no login; saving spreads or watchlists only works from this Mac.
 
 ---
 
@@ -973,7 +973,7 @@ Use `~/MarketData/.venv/bin/python` as Python.
 
 | Do this | Command |
 |---|---|
-| Open the dashboard | http://127.0.0.1:8765 |
+| Open the dashboard | http://127.0.0.1:8765 on this Mac; http://Connors-Macbook-Pro-2.local:8765 from the same Wi-Fi |
 | Status of every job | `~/MarketData/.venv/bin/python ~/MarketData/app/options_collector.py status` (or the Status tab) |
 | Apply edits to collectors, `shared/*.json` or `politics/` | `collectors/install.sh` |
 | Restart the server after editing `server.py` or `ledger.py` | `launchctl kickstart -k gui/$UID/com.marketdashboard.options.dashboard` |
@@ -1044,6 +1044,7 @@ Use `~/MarketData/.venv/bin/python` as Python.
 
 ## 17. Change log
 
+- **2026-11-17:** the dashboard opens from any device on the home Wi-Fi (http://Connors-Macbook-Pro-2.local:8765); edits stay Mac-only. README front page for GitHub visitors.
 - **2026-11-16 (evening):** the signal stack tested and failed (`collectors/signal_stack.py`, `docs/signal-stack/`).
 - **2026-11-16 (evening):** economy gauges on the Today tab and the new daily job `gauges` (`collectors/macro_gauges.py`, FRED series into `macro_series` with source `fred-gauges`).
 - **2026-11-16 (evening):** Polymarket long-shot bias tested and failed (`collectors/poly_bias.py`, `docs/polymarket-bias/`: 1,076 markets, both rules about +0.4% a bet after costs, within luck).

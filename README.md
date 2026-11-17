@@ -53,8 +53,10 @@ the known quirks. `reference.md` is a one-file overview of everything.
 
 ## Open it
 
-**http://127.0.0.1:8765** in any browser on this Mac. The server runs all the time as a
-background job (`dashboard` below) and only listens on this machine. Pages refresh every minute.
+**http://127.0.0.1:8765** on this Mac, or **http://Connors-Macbook-Pro-2.local:8765** (or http://192.168.86.62:8765,
+which can change) from a phone or computer on the same Wi-Fi. The server runs all the time as a background job
+(`dashboard` below). Since 2026-11-17 it listens on the home network (owner's request): no login, and changes
+(saving spreads or watchlists) are only accepted from this Mac. `HOST=127.0.0.1` makes it this-Mac-only again. Pages refresh every minute.
 
 | Tab | Shows | Data |
 |---|---|---|
@@ -216,7 +218,7 @@ without notice). Irreplaceable data gets a second source where one exists.
 | `spxmove` | 16:50, 18:20, 20:50, plus 08:05, Mon–Fri | `collectors/spx_move.py`: S&P 500 move-size model. Refreshes S&P and VIX history and the Fed/CPI/jobs calendar, resolves the last prediction, predicts the next trading day; later runs only retry. See below |
 | `watchdog` | every 30 min (:20, :50), every day | `collectors/watchdog.py`: sends a phone notification when something goes wrong; see Failure alerts below |
 | `briefing` | 10:00 every day | `collectors/briefing.py`: daily update notification, see Daily update below |
-| `dashboard` | always on | `dashboard/server.py` on http://127.0.0.1:8765 (restarts itself if it stops) |
+| `dashboard` | always on | `dashboard/server.py` on port 8765, home network (restarts itself if it stops) |
 
 Watchlist and snapshot filters: `shared/watchlist.json`. **After editing the collector or the
 watchlist, re-run `collectors/install.sh`**: launchd runs a copy in `~/MarketData/app/`.

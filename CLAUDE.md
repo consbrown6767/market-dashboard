@@ -9,7 +9,8 @@ a change alters something it describes (a model, job, table, rule, tab, open ite
 update it in the same piece of work and bump its "Last updated" date.
 
 ## What this is
-A local research dashboard (no trading) at http://127.0.0.1:8765, fed by background collectors on
+A local research dashboard (no trading) at http://127.0.0.1:8765 (also on the home Wi-Fi at
+http://Connors-Macbook-Pro-2.local:8765 since 2026-11-17; no login, POST edits refused unless from this Mac), fed by background collectors on
 this Mac. Tabs: Today (home page: market now, every live test, top stories, betting-market moves),
 Options, Spreads, Gamma (breakout tracker), Politics (political game machine), Scorecard (every model's
 live record, plus the S&P move-size model and the paper record), Research (every idea tested and its
