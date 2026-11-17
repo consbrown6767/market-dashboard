@@ -1,9 +1,55 @@
 # Market Dashboard
 
-A local dashboard that gives a broader picture of the market: one tab per kind of
-information, all reading from one database that background collectors keep filling.
+A personal research system for one question: **can anything built from free data beat simply holding
+the S&P 500?** It collects market, economic, news and betting-market data around the clock, tests trading
+ideas the way a careful researcher would, and keeps an honest live record of every prediction it makes.
 
-Research only. Nothing here places trades.
+![The Today tab: market now, every live test, risk, what's priced in](docs/images/today.png)
+
+## What it found
+
+- **21 studies, 113 strategy versions, almost all failed on years they hadn't seen.** That covered
+  stocks, options, currencies, government bonds, country rotation, betting markets and a 27-signal
+  "quant fund" stack. Ideas that worked in the years their papers studied faded once published.
+- **Risk can be predicted, direction can't.** A model of how big tomorrow's S&P 500 move will be beat
+  both simple benchmarks over 3,151 days of backtest (about 4% smaller error than the VIX's own
+  forecast, with its 90% ranges catching 90.3% of days). No model of *which way* things move did.
+- **What held up was taking more risk while the trend is up.** Holding 2x the market only while it
+  sits above its 200-day average made the most money over 100 years, at the cost of a 56% worst drop.
+  That's a risk choice, not an edge.
+
+Every study's plan was written and committed **before** its results, and each one's write-up is in
+`docs/`. The Research tab lists them all.
+
+## How it's built
+
+- **Collectors:** 18 scheduled background jobs (Python, macOS launchd) pull options chains and open
+  interest, stock prices, the Fed calendar, economic series, about 80 news feeds, shipping traffic
+  through 28 chokepoints, and Polymarket odds into one SQLite database.
+- **Prediction ledger:** every forecast is written down before its outcome, next to a simple benchmark
+  made at the same moment, and hash-chained so no record can be edited afterwards. Live results and
+  backtests are kept apart.
+- **Live paper record:** three trading rules are logged before each trade takes effect and scored
+  daily against SPY. Nothing is actually traded.
+- **Dashboard:** a read-only Python server and a plain-JavaScript front end (TradingView Lightweight
+  Charts), with 11 tabs. Today is the home page.
+- **Research method:** plans fixed in advance, held-out "vault" years opened once and locked in code,
+  realistic trading costs, and luck checks (bootstrap ranges, deflated Sharpe ratios).
+
+## About this project
+
+Designed, directed and judged by Connor Brown, built with Claude (Anthropic's AI assistant) as a coding
+and research partner. The commit history shows that collaboration openly.
+
+It runs on one Mac. The database (about 11 GB), API keys and logs aren't in this repository, so it
+won't run as-is elsewhere without new data credentials. This is research, not investment advice.
+
+---
+
+## Technical reference
+
+The rest of this file is the full reference: how it runs, every data source, table and schedule, and
+the known quirks. `reference.md` is a one-file overview of everything.
 
 ## Open it
 
