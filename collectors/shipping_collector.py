@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 import urllib.parse
 from datetime import date, datetime, timedelta
 
@@ -21,6 +22,7 @@ URL = ("https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/"
        "Daily_Chokepoints_Data/FeatureServer/0/query")
 PAGE = 1000  # the service's maximum per request
 REFRESH_DAYS = 45
+RETRIES, RETRY_WAIT = 4, 75  # seconds between tries when the service says it's busy
 COLUMNS = ["date", "portid", "portname", "n_total", "n_tanker", "n_container", "n_dry_bulk",
            "n_general_cargo", "n_roro", "n_cargo", "capacity", "capacity_tanker", "capacity_container",
            "capacity_dry_bulk", "capacity_general_cargo", "capacity_roro", "capacity_cargo"]
@@ -45,7 +47,13 @@ def fetch(since: str | None) -> list[dict]:
     while True:
         q = {"f": "json", "where": where, "outFields": ",".join(COLUMNS), "returnGeometry": "false",
              "orderByFields": "ObjectId", "resultOffset": offset, "resultRecordCount": PAGE}
-        d = json.loads(http_get(f"{URL}?{urllib.parse.urlencode(q)}"))
+        # The service shares one request quota among all its users and often answers 429 for a
+        # minute or two. Wait and ask again a few times before giving up.
+        for attempt in range(RETRIES + 1):
+            d = json.loads(http_get(f"{URL}?{urllib.parse.urlencode(q)}"))
+            if d.get("error", {}).get("code") != 429 or attempt == RETRIES:
+                break
+            time.sleep(RETRY_WAIT)
         if "error" in d:
             raise RuntimeError(f"PortWatch error: {d['error']}")
         batch = [f["attributes"] for f in d.get("features", [])]
